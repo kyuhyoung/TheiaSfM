@@ -2,6 +2,13 @@ Copyright 2015-2016 Chris Sweeney (sweeney.chris.m@gmail.com)
 UC Santa Barbara
 
 ---------------------
+Notice
+---------------------
+This repo is the "HandEye" branch of zhixy/TheiaSfM repository.  The only reason for this repo is to be the major dependency of https://github.com/kyuhyoung/shecar which is forked from https://github.com/STAR-Center/shecar
+So I removed "HandEye" branch since "Master" branch has replaced it.
+
+
+---------------------
 What is this library?
 ---------------------
 
