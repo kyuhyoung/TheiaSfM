@@ -10,7 +10,6 @@ Sweeney. It is designed to be very efficient, scalable, and accurate. All
 steps of the pipeline are designed to be modular so that code is easy to read
 and easy to extend.
 
-
 Please see the Theia website for detailed information, including instructions
 for building Theia and full documentation of the library. The website is
 currently located at http://www.theia-sfm.org

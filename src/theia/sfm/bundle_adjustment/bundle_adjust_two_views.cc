@@ -43,7 +43,7 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/unit_norm_three_vector_parameterization.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/create_reprojection_error_cost_function.h"
+#include "theia/sfm/camera/reprojection_error.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -61,7 +61,7 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
   solver_options->visibility_clustering_type = ceres::CANONICAL_VIEWS;
   solver_options->logging_type = ceres::SILENT;
   solver_options->num_threads = options.num_threads;
-  solver_options->num_linear_solver_threads = options.num_threads;
+  //solver_options->num_linear_solver_threads = options.num_threads;
   solver_options->max_num_iterations = 200;
   // Solver options takes ownership of the ordering so that we can order the BA
   // problem by points and cameras.
@@ -73,12 +73,9 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
 // keep all intrinsics constant except for focal length by default.
 void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
                                   const bool constant_intrinsic_parameters,
-                                  Camera* camera,
+                                  double* camera_extrinsics,
+                                  double* camera_intrinsics,
                                   ceres::Problem* problem) {
-  double* camera_extrinsics = camera->mutable_extrinsics();
-  double* camera_intrinsics = camera->mutable_intrinsics();
-  const int num_intrinsics = camera->CameraIntrinsics().NumParameters();
-
   // Add extrinsics to problem
   problem->AddParameterBlock(camera_extrinsics, Camera::kExtrinsicsSize);
   if (constant_extrinsic_parameters) {
@@ -87,21 +84,21 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
 
   // Keep the intrinsics constant if desired.
   if (constant_intrinsic_parameters) {
-    problem->AddParameterBlock(camera_intrinsics, num_intrinsics);
+    problem->AddParameterBlock(camera_intrinsics, Camera::kIntrinsicsSize);
     problem->SetParameterBlockConstant(camera_intrinsics);
   } else {
     // NOTE: We start at index 1 because the focal length is considered
     // variable.
-    std::vector<int> constant_intrinsics(num_intrinsics - 1);
+    std::vector<int> constant_intrinsics(Camera::kIntrinsicsSize - 1);
     std::iota(constant_intrinsics.begin(),
               constant_intrinsics.end(),
               1);
 
     ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(num_intrinsics,
+        new ceres::SubsetParameterization(Camera::kIntrinsicsSize,
                                           constant_intrinsics);
     problem->AddParameterBlock(camera_intrinsics,
-                               num_intrinsics,
+                               Camera::kIntrinsicsSize,
                                subset_parameterization);
   }
 }
@@ -139,11 +136,13 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   // Add the two cameras as parameter blocks.
   AddCameraParametersToProblem(true,
                                options.constant_camera1_intrinsics,
-                               camera1,
+                               camera1->mutable_extrinsics(),
+                               camera1->mutable_intrinsics(),
                                &problem);
   AddCameraParametersToProblem(false,
                                options.constant_camera2_intrinsics,
-                               camera2,
+                               camera2->mutable_extrinsics(),
+                               camera2->mutable_intrinsics(),
                                &problem);
   parameter_ordering->AddElementToGroup(camera1->mutable_extrinsics(), 2);
   parameter_ordering->AddElementToGroup(camera1->mutable_intrinsics(), 1);
@@ -153,20 +152,18 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
 
   // Add triangulated points to the problem.
   for (int i = 0; i < points3d->size(); i++) {
-    problem.AddResidualBlock(CreateReprojectionErrorCostFunction(
-                                 camera1->GetCameraIntrinsicsModelType(),
-                                 correspondences[i].feature1),
-                             NULL,
-                             camera1->mutable_extrinsics(),
-                             camera1->mutable_intrinsics(),
-                             points3d->at(i).data());
-    problem.AddResidualBlock(CreateReprojectionErrorCostFunction(
-                                 camera2->GetCameraIntrinsicsModelType(),
-                                 correspondences[i].feature2),
-                             NULL,
-                             camera2->mutable_extrinsics(),
-                             camera2->mutable_intrinsics(),
-                             points3d->at(i).data());
+    problem.AddResidualBlock(
+        ReprojectionError::Create(correspondences[i].feature1),
+        NULL,
+        camera1->mutable_extrinsics(),
+        camera1->mutable_intrinsics(),
+        points3d->at(i).data());
+    problem.AddResidualBlock(
+        ReprojectionError::Create(correspondences[i].feature2),
+        NULL,
+        camera2->mutable_extrinsics(),
+        camera2->mutable_intrinsics(),
+        points3d->at(i).data());
 
     parameter_ordering->AddElementToGroup(points3d->at(i).data(), 0);
   }

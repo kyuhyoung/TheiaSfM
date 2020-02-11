@@ -35,13 +35,10 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 
-#include <memory>
-
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
-#include "theia/util/random.h"
 
 namespace theia {
 
@@ -88,11 +85,6 @@ struct ReconstructionEstimatorOptions {
 
   GlobalPositionEstimatorType global_position_estimator_type =
       GlobalPositionEstimatorType::NONLINEAR;
-
-  // The random number generator used to generate random numbers through the
-  // reconstruction estimation process. If this is a nullptr then the random
-  // generator will be initialized based on the current time.
-  std::shared_ptr<RandomNumberGenerator> rng;
 
   // Number of threads to use.
   int num_threads = 1;
@@ -167,11 +159,6 @@ struct ReconstructionEstimatorOptions {
   LeastUnsquaredDeviationPositionEstimator::Options
       least_unsquared_deviation_position_estimator_options;
 
-  // For global SfM it may be advantageous to run a partial bundle adjustment
-  // optimizing only the camera positions and 3d points while holding camera
-  // orientation and intrinsics constant.
-  bool refine_camera_positions_and_points_after_position_estimation = true;
-
   // --------------------- Incremental SfM Options --------------------- //
 
   // If M is the maximum number of 3D points observed by any view, we want to
@@ -183,12 +170,7 @@ struct ReconstructionEstimatorOptions {
   // When adding a new view to the current reconstruction, this is the
   // reprojection error that determines whether a 2D-3D correspondence is an
   // inlier during localization.
-  //
-  // NOTE: This threshold is with respect to an image that is 1024 pixels
-  // wide. If the image dimensions are larger or smaller than this value then
-  // the threshold will be appropriately scaled. This allows us to use a single
-  // threshold for images that have varying resolutions.
-  double absolute_pose_reprojection_error_threshold = 4.0;
+  double absolute_pose_reprojection_error_threshold = 8.0;
 
   // Minimum number of inliers for absolute pose estimation to be considered
   // successful.
@@ -215,7 +197,6 @@ struct ReconstructionEstimatorOptions {
 
   // The reprojection error to use for determining valid triangulation.
   double triangulation_max_reprojection_error_in_pixels = 10.0;
-
   // Bundle adjust a track immediately after estimating it.
   bool bundle_adjust_tracks = true;
 
@@ -242,6 +223,7 @@ struct ReconstructionEstimatorOptions {
   // //theia/sfm/bundle_adjustment_options.h for full details.
   OptimizeIntrinsicsType intrinsics_to_optimize =
       OptimizeIntrinsicsType::FOCAL_LENGTH |
+      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
 };
 

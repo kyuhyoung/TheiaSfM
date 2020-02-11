@@ -64,10 +64,6 @@ struct RansacParameters {
         use_mle(false),
         use_Tdd_test(false) {}
 
-  // The random number generator used to compute random number during
-  // RANSAC. This may be controlled by the caller for debugging purposes.
-  std::shared_ptr<RandomNumberGenerator> rng;
-
   // Error threshold to determin inliers for RANSAC (e.g., squared reprojection
   // error). This is what will be used by the estimator to determine inliers.
   double error_thresh;
@@ -198,7 +194,6 @@ bool SampleConsensusEstimator<ModelEstimator>::Initialize(
     Sampler<Datum>* sampler) {
   CHECK_NOTNULL(sampler);
   sampler_.reset(sampler);
-
   if (!sampler_->Initialize()) {
     return false;
   }

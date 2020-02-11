@@ -52,14 +52,11 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-RandomNumberGenerator rng(55);
-
 void PoseFromThreeCalibratedTest(const double noise) {
   // Projection matrix.
   const Matrix3d gt_rotation =
-      (Eigen::AngleAxisd(DegToRad(15.0), Vector3d(1.0, 0.0, 0.0)) *
-       Eigen::AngleAxisd(DegToRad(-10.0), Vector3d(0.0, 1.0, 0.0)))
-          .toRotationMatrix();
+      (Eigen::AngleAxisd(15.0, Vector3d(1.0, 0.0, 0.0)) *
+       Eigen::AngleAxisd(-10.0, Vector3d(0.0, 1.0, 0.0))).toRotationMatrix();
   const Vector3d gt_translation(0.3, -1.7, 1.15);
   Matrix3x4d projection_mat;
   projection_mat << gt_rotation, gt_translation;
@@ -75,7 +72,7 @@ void PoseFromThreeCalibratedTest(const double noise) {
     kPoints2d[i] =
         (projection_mat * kPoints3d[i].homogeneous()).eval().hnormalized();
     if (noise) {
-      AddNoiseToProjection(noise, &rng, &kPoints2d[i]);
+      AddNoiseToProjection(noise, &kPoints2d[i]);
     }
   }
 

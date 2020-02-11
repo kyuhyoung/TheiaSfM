@@ -55,8 +55,6 @@ using Eigen::Vector3d;
 
 namespace {
 
-RandomNumberGenerator rng(58);
-
 void TestTwoPointPoseWithNoise(
     const Vector3d points_3d[2],
     const Vector3d& axis,
@@ -85,14 +83,14 @@ void TestTwoPointPoseWithNoise(
   // Adds projection noise if required.
   if (projection_noise) {
     for (int i = 0; i < 2; ++i) {
-      AddNoiseToRay(projection_noise, &rng, &image_rays[i]);
+      AddNoiseToRay(projection_noise, &image_rays[i]);
     }
   }
 
   // Adds model noise if required.
   if (model_noise) {
     for (int i = 0; i < 2; ++i) {
-      AddNoiseToPoint(model_noise, &rng, &model_points[i]);
+      AddNoiseToPoint(model_noise, &model_points[i]);
     }
   }
 
@@ -204,6 +202,7 @@ void ManyPointsTest(const double model_noise,
       {0.31, -2.77, 7.54, 0.54, -3.77, 9.77},
   };
 
+  InitRandomGenerator();
   for (int i = 0; i < THEIA_ARRAYSIZE(kTestPoints); ++i) {
     const Vector3d points_3d[2] = {
       Vector3d(kTestPoints[i][0], kTestPoints[i][1], kTestPoints[i][2]),
@@ -325,6 +324,36 @@ TEST(TwoPointPoseTest, ManyPointsTest) {
   static const double kProjectionNoise = 0.0;
   static const double kMaxAllowedRotationDifference = DegToRad(1.0e-5);
   static const double kMaxAllowedTranslationDifference = 1.0e-5;
+
+  ManyPointsTest(kModelNoise,
+                 kProjectionNoise,
+                 kMaxAllowedRotationDifference,
+                 kMaxAllowedTranslationDifference);
+}
+
+// Tests many sets of model to image correspondences and multiple
+// transformations consisting of translation and rotations around different
+// axes, with noise on the image correspondeces.
+TEST(TwoPointPoseTest, ManyPointsAndCorrespondenceNoiseTest) {
+  static const double kModelNoise = 0.0;
+  static const double kProjectionNoise = 0.5 / 512;
+  static const double kMaxAllowedRotationDifference = DegToRad(10.0);
+  static const double kMaxAllowedTranslationDifference = 5.0;
+
+  ManyPointsTest(kModelNoise,
+                 kProjectionNoise,
+                 kMaxAllowedRotationDifference,
+                 kMaxAllowedTranslationDifference);
+}
+
+// Tests many sets of model to image correspondences and multiple
+// transformations consisting of translation and rotations around different
+// axes, with noise on the model points.
+TEST(TwoPointPoseTest, ManyPointsAndModelNoiseTest) {
+  static const double kModelNoise = 0.01;
+  static const double kProjectionNoise = 0.0;
+  static const double kMaxAllowedRotationDifference = DegToRad(15.0);
+  static const double kMaxAllowedTranslationDifference = 10.0;
 
   ManyPointsTest(kModelNoise,
                  kProjectionNoise,

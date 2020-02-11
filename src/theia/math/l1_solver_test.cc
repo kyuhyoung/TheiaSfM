@@ -91,26 +91,22 @@ TEST(L1Solver, SmallProblem) {
 // This example is taken from the L1-magic library. It is formulated as a
 // codeword recovery problem.
 TEST(L1Solver, Decoding) {
-  RandomNumberGenerator rng(94);
   static const double kTolerance = 1e-8;
 
   static const int source_length = 256;
   static const int codeword_length = 4 * source_length;
   static const int num_pertubations = 0.2 * codeword_length;
 
-  Eigen::MatrixXd mat(codeword_length, source_length);
-  rng.SetRandom(&mat);
-  Eigen::VectorXd source_word(source_length);
-  rng.SetRandom(&source_word);
+  const Eigen::MatrixXd mat =
+      Eigen::MatrixXd::Random(codeword_length, source_length);
+  const Eigen::VectorXd source_word = Eigen::VectorXd::Random(source_length);
   const Eigen::VectorXd code_word = mat * source_word;
 
   // Apply random pertubations to the initial guess.
   Eigen::VectorXd observation = code_word;
-  Eigen::VectorXd pertubations(num_pertubations);
-  rng.SetRandom(&pertubations);
-  pertubations *= 0.5;
+  Eigen::VectorXd pertubations = Eigen::VectorXd::Random(num_pertubations);
   for (int i = 0; i < num_pertubations; i++) {
-    const int rand_entry = rng.RandInt(0, observation.size() - 1);
+    const int rand_entry = RandInt(0, observation.size() - 1);
     observation(rand_entry) = pertubations(i);
   }
 

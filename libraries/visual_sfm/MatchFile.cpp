@@ -24,11 +24,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef _MSC_VER
 #include <unistd.h>
-#else
-#include <io.h>
-#endif
 #include <algorithm>
 #include <iomanip>
 using namespace std;

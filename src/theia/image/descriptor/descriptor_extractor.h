@@ -35,14 +35,17 @@
 #ifndef THEIA_IMAGE_DESCRIPTOR_DESCRIPTOR_EXTRACTOR_H_
 #define THEIA_IMAGE_DESCRIPTOR_DESCRIPTOR_EXTRACTOR_H_
 
+#include <glog/logging.h>
 #include <Eigen/Core>
+#include <algorithm>
 #include <vector>
 
+#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/util/util.h"
 
 namespace theia {
-class FloatImage;
-class Keypoint;
+template<class T> class Image;
+typedef Image<float> FloatImage;
 
 // This interface class is meant to define all descriptor extractors. Different
 // descriptor types may be easily implemented by deriving from this class.

@@ -43,8 +43,6 @@
 #include <vector>
 
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/camera_intrinsics_model.h"
-#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/reconstruction.h"
@@ -92,27 +90,14 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
     ofs_lists << view->Name();
     const auto& prior = view->CameraIntrinsicsPrior();
     if (prior.focal_length.is_set) {
-      ofs_lists << " 0 " << prior.focal_length.value[0];
+      ofs_lists << " 0 " << prior.focal_length.value;
     }
     ofs_lists << std::endl;
 
     // Output the camera information to the bundle file.
     const Camera& camera = view->Camera();
-    if (camera.GetCameraIntrinsicsModelType() !=
-        CameraIntrinsicsModelType::PINHOLE) {
-      LOG(FATAL) << "Could not add camera " << view->Name()
-                 << " to the bundler output file because bundler files only "
-                    "support pinhole camera models. Please remove non-pinhole "
-                    "cameras from the reconstruction and try again.";
-      continue;
-    }
-    const CameraIntrinsicsModel& intrinsics = camera.CameraIntrinsics();
-    ofs_bundle
-        << camera.FocalLength() << " "
-        << intrinsics.GetParameter(PinholeCameraModel::RADIAL_DISTORTION_1)
-        << " "
-        << intrinsics.GetParameter(PinholeCameraModel::RADIAL_DISTORTION_2)
-        << std::endl;
+    ofs_bundle << camera.FocalLength() << " " << camera.RadialDistortion1()
+               << " " << camera.RadialDistortion2() << std::endl;
 
     const Eigen::Matrix3d rotation =
         theia_to_bundler * camera.GetOrientationAsRotationMatrix();

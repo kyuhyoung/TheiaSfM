@@ -38,12 +38,13 @@
 #include <vector>
 
 #include "theia/image/descriptor/descriptor_extractor.h"
+#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/util/util.h"
 
 namespace theia {
 
-class FloatImage;
-class Keypoint;
+template<class T> class Image;
+typedef Image<float> FloatImage;
 
 // Parameters for the akaze feature extractor.
 struct AkazeParameters {

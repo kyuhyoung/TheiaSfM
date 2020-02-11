@@ -38,13 +38,9 @@
 #include <vector>
 
 #include "theia/matching/feature_matcher.h"
-#include "theia/util/util.h"
+#include "theia/matching/indexed_feature_match.h"
 
 namespace theia {
-
-struct FeatureMatcherOptions;
-struct IndexedFeatureMatch;
-struct KeypointsAndDescriptors;
 
 // Performs features matching between two sets of features using a brute force
 // matching method.

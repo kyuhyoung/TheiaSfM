@@ -67,7 +67,8 @@ void ExtractColorsFromImage(
       const int x = static_cast<int>(feature.x());
       const int y = static_cast<int>(feature.y());
       std::lock_guard<std::mutex> lock(*mutex_lock);
-      (*colors)[track_id] += 255.0 * image.GetXY(x, y);
+      (*colors)[track_id] +=
+          Eigen::Vector3f(image(x, y, 0), image(x, y, 1), image(x, y, 2));
     }
   } else if (image.Channels() == 1) {
     for (const TrackId track_id : track_ids) {
@@ -75,7 +76,8 @@ void ExtractColorsFromImage(
       const int x = static_cast<int>(feature.x());
       const int y = static_cast<int>(feature.y());
       std::lock_guard<std::mutex> lock(*mutex_lock);
-      (*colors)[track_id] += 255.0 * image.GetXY(x, y);
+      (*colors)[track_id] +=
+          Eigen::Vector3f(image(x, y, 0), image(x, y, 0), image(x, y, 0));
     }
   } else {
     LOG(FATAL) << "The image file at: " << image_file

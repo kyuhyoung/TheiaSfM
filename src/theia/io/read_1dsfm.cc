@@ -152,7 +152,7 @@ bool Input1DSFM::ReadListsFile(
     if (focal_length != 0) {
       reconstruction_->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
-          ->focal_length.value[0] = focal_length;
+          ->focal_length.value = focal_length;
       reconstruction_->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
           ->focal_length.is_set = true;
@@ -189,9 +189,10 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
   CameraIntrinsicsPrior* prior = view->MutableCameraIntrinsicsPrior();
   prior->image_width = principal_point_x * 2.0;
   prior->image_height = principal_point_y * 2.0;
-  prior->principal_point.is_set = true;
-  prior->principal_point.value[0] = principal_point_x;
-  prior->principal_point.value[1] = principal_point_y;
+  prior->principal_point[0].value = principal_point_x;
+  prior->principal_point[0].is_set = true;
+  prior->principal_point[1].value = principal_point_y;
+  prior->principal_point[1].is_set = true;
   return true;
 }
 
@@ -337,15 +338,15 @@ bool Input1DSFM::ReadEGs() {
     const CameraIntrinsicsPrior prior2 =
         reconstruction_->View(view_id2)->CameraIntrinsicsPrior();
     if (prior1.focal_length.is_set) {
-      info.focal_length_1 = prior1.focal_length.value[0];
+      info.focal_length_1 = prior1.focal_length.value;
     } else {
-      info.focal_length_1 = 1.2 * prior1.principal_point.value[0];
+      info.focal_length_1 = 1.2 * prior1.principal_point[0].value;
     }
 
     if (prior2.focal_length.is_set) {
-      info.focal_length_2 = prior2.focal_length.value[0];
+      info.focal_length_2 = prior2.focal_length.value;
     } else {
-      info.focal_length_2 = 1.2 * prior2.principal_point.value[0];
+      info.focal_length_2 = 1.2 * prior2.principal_point[0].value;
     }
 
     // Add the number of inliers.

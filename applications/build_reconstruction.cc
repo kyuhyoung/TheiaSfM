@@ -69,7 +69,7 @@ DEFINE_string(
 DEFINE_string(feature_density, "NORMAL",
               "Set to SPARSE, NORMAL, or DENSE to extract fewer or more "
               "features from each image.");
-DEFINE_string(matching_strategy, "CASCADE_HASHING",
+DEFINE_string(matching_strategy, "BRUTE_FORCE",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
 DEFINE_bool(match_out_of_core, true,
@@ -84,11 +84,9 @@ DEFINE_int32(matching_max_num_images_in_cache, 128,
              "feature matching. The higher this number is the more memory is "
              "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
-DEFINE_double(max_sampson_error_for_verified_match, 4.0,
-              "Maximum sampson error for a match to be considered "
-              "geometrically valid. This threshold is relative to an image "
-              "with a width of 1024 pixels and will be appropriately scaled "
-              "for images with different resolutions.");
+DEFINE_double(
+    max_sampson_error_for_verified_match, 4.0,
+    "Maximum sampson error for a match to be considered geometrically valid.");
 DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "Minimum number of geometrically verified inliers that a pair on "
              "images must have in order to be considered a valid two-view "
@@ -142,12 +140,6 @@ DEFINE_bool(filter_relative_translations_with_1dsfm, true,
             "Filter relative translation estimations with the 1DSfM algorithm "
             "to potentially remove outlier relativep oses for position "
             "estimation.");
-DEFINE_bool(refine_camera_positions_and_points_after_position_estimation, true,
-            "After estimating positions in Global SfM we can refine only "
-            "camera positions and 3D point locations, holding camera "
-            "intrinsics and rotations constant. This often improves the "
-            "stability of bundle adjustment when the camera intrinsics are "
-            "inaccurate.");
 DEFINE_int32(num_retriangulation_iterations, 1,
              "Number of times to retriangulate any unestimated tracks. Bundle "
              "adjustment is performed after retriangulation.");
@@ -160,11 +152,8 @@ DEFINE_double(position_estimation_robust_loss_width, 0.1,
               "Robust loss width to use for position estimation.");
 
 // Incremental SfM options.
-DEFINE_double(absolute_pose_reprojection_error_threshold, 4.0,
-              "The inlier threshold for absolute pose estimation. This "
-              "threshold is relative to an image with a width of 1024 pixels "
-              "and will be appropriately scaled based on the input image "
-              "resolutions.");
+DEFINE_double(absolute_pose_reprojection_error_threshold, 8.0,
+              "The inlier threshold for absolute pose estimation.");
 DEFINE_int32(min_num_absolute_pose_inliers, 30,
              "Minimum number of inliers in order for absolute pose estimation "
              "to be considered successful.");
@@ -276,9 +265,6 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   reconstruction_estimator_options.nonlinear_position_estimator_options
       .min_num_points_per_view =
       FLAGS_position_estimation_min_num_tracks_per_view;
-  reconstruction_estimator_options
-      .refine_camera_positions_and_points_after_position_estimation =
-      FLAGS_refine_camera_positions_and_points_after_position_estimation;
 
   // Incremental SfM Options.
   reconstruction_estimator_options

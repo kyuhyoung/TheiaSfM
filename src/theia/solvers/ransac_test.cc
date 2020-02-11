@@ -32,7 +32,6 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <glog/logging.h>
 #include <math.h>
 #include <vector>
 
@@ -44,8 +43,6 @@
 
 namespace theia {
 namespace {
-RandomNumberGenerator rng(46);
-
 struct Point {
   double x;
   double y;
@@ -90,12 +87,12 @@ TEST(RansacTest, LineFitting) {
   std::vector<Point> input_points;
   for (int i = 0; i < 10000; ++i) {
     if (i % 2 == 0) {
-      double noise_x = rng.RandGaussian(0.0, 0.1);
-      double noise_y = rng.RandGaussian(0.0, 0.1);
+      double noise_x = RandGaussian(0.0, 0.1);
+      double noise_y = RandGaussian(0.0, 0.1);
       input_points.push_back(Point(i + noise_x, i + noise_y));
     } else {
-      double noise_x = rng.RandDouble(0.0, 10000);
-      double noise_y = rng.RandDouble(0.0, 10000);
+      double noise_x = RandDouble(0.0, 10000);
+      double noise_y = RandDouble(0.0, 10000);
       input_points.push_back(Point(noise_x, noise_y));
     }
   }
@@ -103,7 +100,6 @@ TEST(RansacTest, LineFitting) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 0.5;
   Ransac<LineEstimator> ransac_line(params, line_estimator);
   ransac_line.Initialize();
@@ -118,12 +114,12 @@ TEST(RansacTest, TerminationNumInliers) {
   std::vector<Point> input_points;
   for (int i = 0; i < 10000; ++i) {
     if (i % 2 == 0) {
-      double noise_x = rng.RandGaussian(0.0, 0.1);
-      double noise_y = rng.RandGaussian(0.0, 0.1);
+      double noise_x = RandGaussian(0.0, 0.1);
+      double noise_y = RandGaussian(0.0, 0.1);
       input_points.push_back(Point(i + noise_x, i + noise_y));
     } else {
-      double noise_x = rng.RandDouble(0.0, 10000);
-      double noise_y = rng.RandDouble(0.0, 10000);
+      double noise_x = RandDouble(0.0, 10000);
+      double noise_y = RandDouble(0.0, 10000);
       input_points.push_back(Point(noise_x, noise_y));
     }
   }
@@ -131,7 +127,6 @@ TEST(RansacTest, TerminationNumInliers) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 0.5;
   Ransac<LineEstimator> ransac_line(params, line_estimator);
   ransac_line.Initialize();

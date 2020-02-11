@@ -38,10 +38,7 @@
 #include <Eigen/Core>
 #include <stdint.h>
 #include <bitset>
-#include <memory>
 #include <vector>
-
-#include "theia/util/random.h"
 
 namespace theia {
 
@@ -88,8 +85,7 @@ struct HashedImage {
 // this class we ask that you please cite this paper.
 class CascadeHasher {
  public:
-  CascadeHasher() : rng_(std::make_shared<RandomNumberGenerator>()) {}
-  CascadeHasher(std::shared_ptr<RandomNumberGenerator> rng) : rng_(rng) {}
+  CascadeHasher() {}
 
   // Creates the hashing projections. This must be called before using the
   // cascade hasher.
@@ -110,8 +106,6 @@ class CascadeHasher {
                    std::vector<IndexedFeatureMatch>* matches) const;
 
  private:
-  std::shared_ptr<RandomNumberGenerator> rng_;
-
   // Creates the hash code for each descriptor and determines which buckets each
   // descriptor belongs to.
   void CreateHashedDescriptors(const std::vector<Eigen::VectorXf>& sift_desc,

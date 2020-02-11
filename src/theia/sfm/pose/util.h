@@ -36,9 +36,12 @@
 #define THEIA_SFM_POSE_UTIL_H_
 
 #include <Eigen/Core>
-#include "theia/alignment/alignment.h"
+#include <vector>
 
 namespace theia {
+
+class Camera;
+struct FeatureCorrespondence;
 
 // Calculates Sampson distance for two correspondances and an essential or
 // fundamental matrix by eq. 11.9 in Hartley and Zisserman. For an E or F

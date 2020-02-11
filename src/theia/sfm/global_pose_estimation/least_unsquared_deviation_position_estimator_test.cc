@@ -52,7 +52,6 @@
 #include "theia/sfm/transformation/align_point_clouds.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
-#include "theia/util/random.h"
 #include "theia/util/stringprintf.h"
 
 namespace theia {
@@ -61,13 +60,11 @@ using Eigen::Vector3d;
 
 namespace {
 
-RandomNumberGenerator rng(63);
-
 Vector3d RelativeRotationFromTwoRotations(const Vector3d& rotation1,
                                           const Vector3d& rotation2,
                                           const double noise) {
   const Eigen::Matrix3d noisy_rotation =
-      Eigen::AngleAxisd(DegToRad(noise), rng.RandVector3d().normalized())
+      Eigen::AngleAxisd(DegToRad(noise), Vector3d::Random().normalized())
           .toRotationMatrix();
 
   Eigen::Matrix3d rotation_matrix1, rotation_matrix2;
@@ -84,7 +81,7 @@ Vector3d RelativeTranslationFromTwoPositions(const Vector3d& position1,
                                              const Vector3d& rotation1,
                                              const double noise) {
   const Eigen::AngleAxisd noisy_translation(DegToRad(noise),
-                                            rng.RandVector3d().normalized());
+                                            Vector3d::Random().normalized());
   Eigen::Matrix3d rotation_matrix1;
   ceres::AngleAxisToRotationMatrix(rotation1.data(), rotation_matrix1.data());
   const Vector3d relative_translation =
@@ -150,14 +147,16 @@ class EstimatePositionsLeastUnsquaredDeviationTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() {}
+  void SetUp() {
+    srand(1234);
+  }
 
   void SetupScene(const int num_views) {
     // Create random views.
     for (int i = 0; i < num_views; i++) {
       // Create a random pose.
-      orientations_[i] = 0.2 * rng.RandVector3d();
-      positions_[i] = 10.0 * rng.RandVector3d();
+      orientations_[i] = 0.2 * Vector3d::Random();
+      positions_[i] = 10.0 * Vector3d::Random();
     }
   }
 
@@ -192,7 +191,7 @@ class EstimatePositionsLeastUnsquaredDeviationTest : public ::testing::Test {
     info.focal_length_2 = 800.0;
 
     // These objects will add noise to the relative pose.
-    const Eigen::Vector2d noise = pose_noise * rng.RandVector2d();
+    const Eigen::Vector2d noise = pose_noise * Eigen::Vector2d::Random();
 
     // Determine the relative rotation and add noise.
     info.rotation_2 = RelativeRotationFromTwoRotations(

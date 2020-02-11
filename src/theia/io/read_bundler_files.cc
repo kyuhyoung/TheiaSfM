@@ -46,7 +46,6 @@
 #include <vector>
 
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
@@ -111,7 +110,7 @@ bool ReadListsFile(const std::string& list_filename,
     if (focal_length != 0) {
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
-          ->focal_length.value[0] = focal_length;
+          ->focal_length.value = focal_length;
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
           ->focal_length.is_set = true;
@@ -205,31 +204,20 @@ bool ReadBundlerFiles(const std::string& lists_file,
   for (int i = 0; i < num_cameras; i++) {
     reconstruction->MutableView(i)->SetEstimated(true);
     Camera* camera = reconstruction->MutableView(i)->MutableCamera();
-    camera->SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
 
     // Read in focal length, radial distortion.
     std::string internal_params;
     std::getline(ifs, internal_params);
     p = internal_params.c_str();
-    double focal_length = strtod(p, &p2);
+    const double focal_length = strtod(p, &p2);
     p = p2;
     const double k1 = strtod(p, &p2);
     p = p2;
     const double k2 = strtod(p, &p2);
     p = p2;
 
-    // Do not consider this view if an invalid focal length is present.
-    if (focal_length <= 0.0) {
-      views_to_remove.insert(i);
-    } else {
-      camera->SetFocalLength(focal_length);
-    }
-
-    camera->MutableCameraIntrinsics()->SetParameter(
-        PinholeCameraModel::RADIAL_DISTORTION_1, k1);
-    camera->MutableCameraIntrinsics()->SetParameter(
-        PinholeCameraModel::RADIAL_DISTORTION_2, k2);
-
+    camera->SetFocalLength(focal_length);
+    camera->SetRadialDistortion(k1, k2);
     // These cameras (and the features below) already have the principal point
     // removed.
     camera->SetPrincipalPoint(0, 0);
@@ -262,6 +250,10 @@ bool ReadBundlerFiles(const std::string& lists_file,
     const Eigen::Vector3d position = -rotation.transpose() * translation;
     camera->SetPosition(position);
     camera->SetOrientationFromRotationMatrix(rotation);
+
+    if (camera->FocalLength() == 0) {
+      views_to_remove.insert(i);
+    }
 
     if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
       std::cout << "\r Loading parameters for camera " << i + 1 << " / "
@@ -324,7 +316,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
     }
 
     // Do not add the track if it is underconstrained.
-    if (track.size() < 2 || position.squaredNorm() == 0.0) {
+    if (track.size() < 2) {
       continue;
     }
 

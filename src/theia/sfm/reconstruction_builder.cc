@@ -39,10 +39,7 @@
 #include <string>
 #include <vector>
 
-#include "theia/io/write_matches.h"
-#include "theia/matching/image_pair_match.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/track_builder.h"
@@ -152,8 +149,6 @@ ReconstructionBuilder::ReconstructionBuilder(
     : options_(options) {
   CHECK_GT(options.num_threads, 0);
 
-  options_.reconstruction_estimator_options.rng = options.rng;
-
   reconstruction_.reset(new Reconstruction());
   view_graph_.reset(new ViewGraph());
   track_builder_.reset(
@@ -172,8 +167,6 @@ ReconstructionBuilder::ReconstructionBuilder(
   feam_options.feature_matcher_options = options_.matching_options;
   feam_options.feature_matcher_options.geometric_verification_options
       .min_num_inlier_matches = options_.min_num_inlier_matches;
-  feam_options.feature_matcher_options.geometric_verification_options
-      .estimate_twoview_info_options.rng = options_.rng;
 
   feature_extractor_and_matcher_.reset(
       new FeatureExtractorAndMatcher(feam_options));

@@ -36,7 +36,6 @@
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <algorithm>
 #include <vector>
 

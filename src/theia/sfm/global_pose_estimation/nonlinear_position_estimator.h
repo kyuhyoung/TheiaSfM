@@ -35,23 +35,19 @@
 #ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
 #define THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
 
-#include <ceres/problem.h>
-#include <ceres/solver.h>
+#include <ceres/ceres.h>
 #include <Eigen/Core>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-#include "theia/sfm/global_pose_estimation/position_estimator.h"
-#include "theia/sfm/types.h"
 #include "theia/util/util.h"
+#include "theia/sfm/global_pose_estimation/position_estimator.h"
+#include "theia/sfm/reconstruction.h"
+#include "theia/sfm/types.h"
+#include "theia/sfm/view_triplet.h"
 
 namespace theia {
-class RandomNumberGenerator;
-class Reconstruction;
-class TwoViewInfo;
-class View;
 
 // Estimates the camera position of views given pairwise relative poses and the
 // absolute orientations of cameras. Positions are estimated using a nonlinear
@@ -61,11 +57,6 @@ class View;
 class NonlinearPositionEstimator : public PositionEstimator {
  public:
   struct Options {
-    // The random number generator used to generate random numbers through the
-    // reconstruction estimation process. If this is a nullptr then the random
-    // generator will be initialized based on the current time.
-    std::shared_ptr<RandomNumberGenerator> rng;
-
     // Options for Ceres nonlinear solver.
     int num_threads = 1;
     int max_num_iterations = 400;
@@ -140,7 +131,6 @@ class NonlinearPositionEstimator : public PositionEstimator {
   const Reconstruction& reconstruction_;
   const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
 
-  std::shared_ptr<RandomNumberGenerator> rng_;
   std::unordered_map<TrackId, Eigen::Vector3d> triangulated_points_;
   std::unique_ptr<ceres::Problem> problem_;
   ceres::Solver::Options solver_options_;

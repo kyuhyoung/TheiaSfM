@@ -39,10 +39,7 @@
 #include <vector>
 
 #include "theia/io/import_nvm_file.h"
-#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/reconstruction.h"
-#include "theia/sfm/track.h"
-#include "theia/sfm/view.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/map_util.h"
 
@@ -103,7 +100,6 @@ bool ImportNVMFile(const std::string& nvm_filepath,
     // Set the camera intrinsic parameters.
     const CameraT& vsfm_camera = vsfm_reconstruction.camera_data[i];
     Camera* camera = view->MutableCamera();
-    camera->SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
     camera->SetFocalLength(vsfm_camera.GetFocalLength());
 
     // Set the camera extrinsic parameters. The rotation matrix is retreived

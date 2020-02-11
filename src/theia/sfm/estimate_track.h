@@ -35,14 +35,13 @@
 #ifndef THEIA_SFM_ESTIMATE_TRACK_H_
 #define THEIA_SFM_ESTIMATE_TRACK_H_
 
-#include <unordered_set>
-#include <vector>
-
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 
+#include <unordered_set>
+
 namespace theia {
-class Reconstruction;
 
 // Estimates the 3D point of a track by using all estimated views to compute a
 // (potentially nonminimal) triangulation of track. The the angle between all
@@ -102,7 +101,7 @@ class TrackEstimator {
   // Estimate only the tracks supplied by the user.
   Summary EstimateTracks(const std::unordered_set<TrackId>& track_ids);
 
- private:
+ protected:
   void EstimateTrackSet(const int start, const int stop);
   bool EstimateTrack(const TrackId track_id);
 

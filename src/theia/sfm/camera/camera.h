@@ -37,37 +37,48 @@
 
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
-#include <cereal/types/memory.hpp>
-#include <glog/logging.h>
 #include <stdint.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <algorithm>
 #include <vector>
 
-#include "theia/sfm/camera/camera_intrinsics_model.h"
-#include "theia/sfm/camera/camera_intrinsics_model_type.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
 
 // This class contains the full camera pose information including extrinsic
 // parameters as well as intrinsic parameters. Extrinsic parameters include the
-// camera orientation (as angle-axis) and position, and intrinsic parameters are
-// specific to the camera intrinsics model being used. Convenience methods for
-// common functions like projecting 3D points are provided so that the user does
-// not have to manage the camera intrinsics model type.
+// camera orientation (as angle-axis) and position, and intrinsic parameters
+// include focal length, aspect ratio, skew, principal points, and (up to
+// 2-parameter) radial distortion. Methods are provided for common
+// transformations and projections.
+//
+// Intrinsics of the camera are modeled such that:
+//
+//  K = [f     s     px]
+//      [0   f * a   py]
+//      [0     0      1]
+//
+// where f = focal length, px and py is the principal point, s = skew, and
+// a = aspect ratio.
+//
+// Extrinsic parametser transform the homogeneous 3D point X to the image point
+// p such that:
+//   p = R * (X[0..2] / X[3] - C);
+//   p = p[0,1] / p[2];
+//   r = p[0] * p[0] + p[1] * p[1];
+//   d = 1 + k1 * r + k2 * r * r;
+//   p *= d;
+//   p = K * p;
+//
+//  where R = orientation, C = camera position, and k1 k2 are the radial
+//  distortion parameters.
 class Camera {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Camera();
-  explicit Camera(const CameraIntrinsicsModelType& camera_type);
-  Camera(const Camera& camera);
   ~Camera() {}
-
-  Camera& operator=(const Camera& rhs);
 
   // Initializes the camera intrinsic and extrinsic parameters from the
   // projection matrix by decomposing the matrix.
@@ -78,25 +89,6 @@ class Camera {
       const int image_width,
       const int image_height,
       const Matrix3x4d projection_matrix);
-
-  // Set the camera parameters (and camera intrinsics type) from the prior.
-  void SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior);
-
-  // Return a CameraIntrinsicsPrior that can be used to initialize a camera with
-  // the same parameters with the SetFromCameraIntrinsicsPriors method.
-  CameraIntrinsicsPrior CameraIntrinsicsPriorFromIntrinsics() const;
-
-  // Returns the type corresponding to the camera intrinsics model used the
-  // describe the lens of this camera.
-  CameraIntrinsicsModelType GetCameraIntrinsicsModelType() const;
-
-  // Sets the camera to use the designated camera intrinsics model type. If the
-  // camera model type is the same as what is currently being used then this is
-  // a no-op. Otherwise, the camera intrinsics parameters are cleared and the
-  // camera intrinsics model that is used by this camera is appropriately
-  // changed.
-  void SetCameraIntrinsicsModelType(
-      const CameraIntrinsicsModelType& camera_model_type);
 
   // ---------------------------- Helper methods ---------------------------- //
   // Returns the projection matrix. Does not include radial distortion.
@@ -138,9 +130,6 @@ class Camera {
   Eigen::Vector3d PixelToNormalizedCoordinates(
       const Eigen::Vector2d& pixel) const;
 
-  // Print the camera intrinsics values in a human-readable format.
-  void PrintCameraIntrinsics() const;
-
   // ----------------------- Getter and Setter methods ---------------------- //
   void SetPosition(const Eigen::Vector3d& position);
   Eigen::Vector3d GetPosition() const;
@@ -153,33 +142,36 @@ class Camera {
   void SetFocalLength(const double focal_length);
   double FocalLength() const;
 
+  void SetAspectRatio(const double aspect_ratio);
+  double AspectRatio() const;
+
+  void SetSkew(const double skew);
+  double Skew() const;
+
   void SetPrincipalPoint(const double principal_point_x,
                          const double principal_point_y);
   double PrincipalPointX() const;
   double PrincipalPointY() const;
 
+  void SetRadialDistortion(const double radial_distortion_1,
+                           const double radial_distortion_2);
+  double RadialDistortion1() const;
+  double RadialDistortion2() const;
+
   void SetImageSize(const int image_width, const int image_height);
   int ImageWidth() const { return image_size_[0]; }
   int ImageHeight() const { return image_size_[1]; }
 
-  const CameraIntrinsicsModel& CameraIntrinsics() const {
-    return *camera_intrinsics_;
-  }
+  const double* extrinsics() const { return camera_parameters_; }
+  double* mutable_extrinsics() { return camera_parameters_;  }
 
-  CameraIntrinsicsModel* MutableCameraIntrinsics() {
-    return camera_intrinsics_.get();
+  const double* intrinsics() const {
+    return camera_parameters_ + kExtrinsicsSize;
   }
+  double* mutable_intrinsics() { return camera_parameters_ + kExtrinsicsSize; }
 
   const double* parameters() const { return camera_parameters_; }
   double* mutable_parameters() { return camera_parameters_; }
-
-  const double* extrinsics() const { return camera_parameters_; }
-  double* mutable_extrinsics() { return camera_parameters_; }
-
-  const double* intrinsics() const { return camera_intrinsics_->parameters(); }
-  double* mutable_intrinsics() {
-    return camera_intrinsics_->mutable_parameters();
-  }
 
   // Indexing for the location of parameters. Collecting the extrinsics and
   // intrinsics into a single array makes the interface to bundle adjustment
@@ -189,7 +181,19 @@ class Camera {
     ORIENTATION = 3
   };
 
+  enum InternalParametersIndex{
+    FOCAL_LENGTH = 0,
+    ASPECT_RATIO = 1,
+    SKEW = 2,
+    PRINCIPAL_POINT_X = 3,
+    PRINCIPAL_POINT_Y = 4,
+    RADIAL_DISTORTION_1 = 5,
+    RADIAL_DISTORTION_2 = 6
+  };
+
   static const int kExtrinsicsSize = 6;
+  static const int kIntrinsicsSize = 7;
+  static const int kParameterSize = kExtrinsicsSize + kIntrinsicsSize;
 
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
@@ -197,48 +201,11 @@ class Camera {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    if (version > 0) {
-      ar(cereal::binary_data(camera_parameters_,
-                             sizeof(double) * kExtrinsicsSize),
-         camera_intrinsics_,
-         cereal::binary_data(image_size_, sizeof(int) * 2));
-    } else {
-      CHECK(GetCameraIntrinsicsModelType() ==
-            CameraIntrinsicsModelType::PINHOLE)
-          << "the theia::Camera class version " << version
-          << " can only serialize Pinhole cameras. Please make sure all "
-             "cameras are set as pinhole cameras";
-      const int num_parameters =
-          kExtrinsicsSize + camera_intrinsics_->NumParameters();
-      std::vector<double> parameters(num_parameters);
-
-      // Copy the extrinsics and intrinsics into the vector.
-      std::copy(camera_parameters_,
-                camera_parameters_ + kExtrinsicsSize,
-                parameters.data());
-      std::copy(camera_intrinsics_->parameters(),
-                camera_intrinsics_->parameters() +
-                    camera_intrinsics_->NumParameters(),
-                parameters.data() + kExtrinsicsSize);
-
-      // I/O with the serialization.
-      ar(cereal::binary_data(parameters.data(),
-                             sizeof(double) * num_parameters),
-         cereal::binary_data(image_size_, sizeof(int) * 2));
-
-      // Copy the extrinsics and intrinsics back into the local variables.
-      std::copy(parameters.data(),
-                parameters.data() + kExtrinsicsSize,
-                camera_parameters_);
-      std::copy(parameters.data() + kExtrinsicsSize,
-                parameters.data() + num_parameters,
-                camera_intrinsics_->mutable_parameters());
-    }
+    ar(cereal::binary_data(camera_parameters_, sizeof(double) * kParameterSize),
+       cereal::binary_data(image_size_, sizeof(int) * 2));
   }
 
-  double camera_parameters_[kExtrinsicsSize];
-
-  std::unique_ptr<CameraIntrinsicsModel> camera_intrinsics_;
+  double camera_parameters_[kParameterSize];
 
   // The image size as width then height.
   int image_size_[2];
@@ -246,6 +213,6 @@ class Camera {
 
 }  // namespace theia
 
-CEREAL_CLASS_VERSION(theia::Camera, 1);
+CEREAL_CLASS_VERSION(theia::Camera, 0);
 
 #endif  // THEIA_SFM_CAMERA_CAMERA_H_

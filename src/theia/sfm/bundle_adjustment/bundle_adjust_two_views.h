@@ -38,12 +38,13 @@
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/camera/camera.h"
 
 namespace theia {
-class Camera;
-class TwoViewInfo;
-struct FeatureCorrespondence;
+
+struct TwoViewInfo;
 
 // Configuration parameters for two-view bundle adjustment. The two bools
 // control whether intrinsics are additionally optimized which is useful for

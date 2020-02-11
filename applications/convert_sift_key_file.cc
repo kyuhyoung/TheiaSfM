@@ -35,9 +35,11 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <gflags/gflags.h>
-#include <theia/theia.h>
 #include <string>
 #include <vector>
+
+#include "theia/io/sift_text_file.h"
+#include "theia/io/sift_binary_file.h"
 
 DEFINE_string(input_sift_key_file, "",
               "Input sift key text file to convert. Should end in .key");

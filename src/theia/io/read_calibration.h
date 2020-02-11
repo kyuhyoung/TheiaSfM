@@ -38,8 +38,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "theia/sfm/camera_intrinsics_prior.h"
+
 namespace theia {
-struct CameraIntrinsicsPrior;
 
 // Reads calibration data for images that are to be reconstructed. The
 // calibration file should be a text file where each line is in the form of:

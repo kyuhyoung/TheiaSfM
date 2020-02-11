@@ -43,7 +43,6 @@
 
 #include "theia/image/image.h"
 #include "theia/image/descriptor/create_descriptor_extractor.h"
-#include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_correspondence.h"
@@ -54,7 +53,6 @@
 #include "theia/sfm/exif_reader.h"
 #include "theia/sfm/two_view_match_geometric_verification.h"
 #include "theia/util/filesystem.h"
-#include "theia/util/string.h"
 #include "theia/util/threadpool.h"
 
 namespace theia {
@@ -169,57 +167,28 @@ void FeatureExtractorAndMatcher::ProcessImage(
     const int i) {
   const std::string& image_filepath = image_filepaths_[i];
 
-  // Get the camera intrinsics prior if it was provided.
-  CameraIntrinsicsPrior intrinsics =
-      FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
-
-  // Extract an EXIF focal length if it was not provided.
-  if (!intrinsics.focal_length.is_set) {
+  // Extract Exif if it wasn't provided.
+  if (!ContainsKey(intrinsics_, image_filepath)) {
+    CameraIntrinsicsPrior intrinsics;
     CHECK(exif_reader_.ExtractEXIFMetadata(image_filepath, &intrinsics));
-
-    // If the focal length still could not be extracted, set it to a reasonable
-    // value based on a median viewing angle.
-    if (!options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
-      VLOG(2) << "Exif was not detected. Setting it to a reasonable value.";
-      intrinsics.focal_length.is_set = true;
-      intrinsics.focal_length.value[0] =
-          1.2 * static_cast<double>(
-                    std::max(intrinsics.image_width, intrinsics.image_height));
-    }
-
     std::lock_guard<std::mutex> lock(intrinsics_mutex_);
-    // Insert or update the value of the intrinsics.
-    intrinsics_[image_filepath] =  intrinsics;
+    intrinsics_.emplace(image_filepath, intrinsics);
   }
 
   // Early exit if no EXIF calibration exists and we are only processing
   // calibration views.
-  if (options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
+  const CameraIntrinsicsPrior& intrinsics =
+      FindOrDie(intrinsics_, image_filepath);
+  if (intrinsics.focal_length.is_set) {
     LOG(INFO) << "Image " << image_filepath
-              << " did not contain an EXIF focal length. Skipping this image.";
-    return;
+              << " contained an EXIF focal length: "
+              << intrinsics.focal_length.value;
+  } else if (!options_.only_calibrated_views) {
+    LOG(INFO) << "Image " << image_filepath
+              << " did not contain an EXIF focal length.";
   } else {
     LOG(INFO) << "Image " << image_filepath
-              << " is initialized with the focal length: "
-              << intrinsics.focal_length.value[0];
-  }
-
-  // Get the image filename without the directory.
-  std::string image_filename;
-  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
-
-  // Get the feature filepath based on the image filename.
-  std::string output_dir =
-      options_.feature_matcher_options.keypoints_and_descriptors_output_dir;
-  AppendTrailingSlashIfNeeded(&output_dir);
-  const std::string feature_filepath =
-      output_dir + image_filename + ".features";
-
-  // If the feature file already exists, skip the feature extraction.
-  if (options_.feature_matcher_options.match_out_of_core &&
-      FileExists(feature_filepath)) {
-    std::lock_guard<std::mutex> lock(matcher_mutex_);
-    matcher_->AddImage(image_filename, intrinsics);
+              << " did not contain an EXIF focal length. Skipping this image.";
     return;
   }
 
@@ -232,6 +201,8 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // the feature matcher to control fine-grained things like multi-threading and
   // caching. For instance, the matcher may choose to write the descriptors to
   // disk and read them back as needed.
+  std::string image_filename;
+  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
   std::lock_guard<std::mutex> lock(matcher_mutex_);
   matcher_->AddImage(image_filename, keypoints, descriptors, intrinsics);
 }

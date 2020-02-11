@@ -45,8 +45,6 @@ using std::vector;
 namespace theia {
 namespace {
 
-RandomNumberGenerator rng(48);
-
 // Create a testable instance of ARRSAC (i.e. move protected methods to public
 // so that we can easily test it).
 template <class ModelEstimator>
@@ -109,8 +107,8 @@ TEST(ArrsacTest, InitializeHypothesisSet) {
   // Create a set of points along y=x with a small random pertubation.
   vector<Point> input_points;
   for (int i = 0; i < 10000; ++i) {
-    double noise_x = rng.RandDouble(-1.0, 1.0);
-    double noise_y = rng.RandDouble(-1.0, 1.0);
+    double noise_x = RandDouble(-1.0, 1.0);
+    double noise_y = RandDouble(-1.0, 1.0);
     if (i < 300) {
       noise_x = 0;
       noise_y = 0;
@@ -122,7 +120,6 @@ TEST(ArrsacTest, InitializeHypothesisSet) {
   LineEstimator estimator;
   vector<Line> initial_hypothesis;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();
@@ -146,7 +143,6 @@ TEST(ArrsacTest, Estimate) {
   LineEstimator estimator;
   Line fitted_line;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();
@@ -177,7 +173,6 @@ TEST(ArrsacTest, EstimateWithQuality) {
 
   Line fitted_line;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();

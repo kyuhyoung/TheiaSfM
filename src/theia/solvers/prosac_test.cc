@@ -110,7 +110,6 @@ TEST(ProsacTest, LineFitting) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(113);
   params.error_thresh = 0.5;
   Prosac<LineEstimator> prosac_line(params, line_estimator);
   prosac_line.Initialize();

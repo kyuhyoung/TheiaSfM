@@ -108,7 +108,6 @@ GlobalReconstructionEstimator::GlobalReconstructionEstimator(
     const ReconstructionEstimatorOptions& options) {
   options_ = options;
   translation_filter_options_ = SetRelativeTranslationFilteringOptions(options);
-  options_.nonlinear_position_estimator_options.rng = options.rng;
   options_.nonlinear_position_estimator_options.num_threads =
       options_.num_threads;
   options_.linear_triplet_position_estimator_options.num_threads =
@@ -219,7 +218,6 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
                                       positions_,
                                       reconstruction_);
 
-
   // Always triangulate once, then retriangulate and remove outliers depending
   // on the reconstruciton estimator options.
   for (int i = 0; i < options_.num_retriangulation_iterations + 1; i++) {
@@ -230,19 +228,6 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     summary.triangulation_time += timer.ElapsedTimeInSeconds();
 
     SetUnderconstrainedAsUnestimated(reconstruction_);
-
-    // Do a single step of bundle adjustment where only the camera positions and
-    // 3D points are refined. This is only done for the very first bundle
-    // adjustment iteration.
-    if (i == 0 &&
-        options_.refine_camera_positions_and_points_after_position_estimation) {
-      LOG(INFO) << "Performing partial bundle adjustment to optimize only the "
-                   "camera positions and 3d points.";
-      timer.Reset();
-      BundleAdjustCameraPositionsAndPoints();
-      summary.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
-    }
-
 
     // Step 9. Bundle Adjustment.
     LOG(INFO) << "Performing bundle adjustment.";
@@ -406,11 +391,6 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
 
   // Choose the global position estimation type.
   switch (options_.global_position_estimator_type) {
-    case GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION: {
-      position_estimator.reset(new LeastUnsquaredDeviationPositionEstimator(
-          options_.least_unsquared_deviation_position_estimator_options));
-      break;
-    }
     case GlobalPositionEstimatorType::NONLINEAR: {
       position_estimator.reset(new NonlinearPositionEstimator(
           options_.nonlinear_position_estimator_options, *reconstruction_));
@@ -420,6 +400,11 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
       position_estimator.reset(new LinearPositionEstimator(
           options_.linear_triplet_position_estimator_options,
           *reconstruction_));
+      break;
+    }
+    case GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION: {
+      position_estimator.reset(new LeastUnsquaredDeviationPositionEstimator(
+          options_.least_unsquared_deviation_position_estimator_options));
       break;
     }
     default: {
@@ -453,18 +438,6 @@ bool GlobalReconstructionEstimator::BundleAdjustment() {
   // Bundle adjustment.
   bundle_adjustment_options_ =
       SetBundleAdjustmentOptions(options_, positions_.size());
-  const auto& bundle_adjustment_summary =
-      BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
-  return bundle_adjustment_summary.success;
-}
-
-bool GlobalReconstructionEstimator::BundleAdjustCameraPositionsAndPoints() {
-  bundle_adjustment_options_ =
-      SetBundleAdjustmentOptions(options_, positions_.size());
-  bundle_adjustment_options_.constant_camera_orientation = true;
-  bundle_adjustment_options_.constant_camera_position = false;
-  bundle_adjustment_options_.intrinsics_to_optimize =
-      OptimizeIntrinsicsType::NONE;
   const auto& bundle_adjustment_summary =
       BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
   return bundle_adjustment_summary.success;

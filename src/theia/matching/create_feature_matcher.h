@@ -37,9 +37,10 @@
 
 #include <memory>
 
+#include "theia/matching/feature_matcher.h"
+#include "theia/matching/feature_matcher_options.h"
+
 namespace theia {
-class FeatureMatcher;
-struct FeatureMatcherOptions;
 
 // The type of matching to perform.
 enum class MatchingStrategy {

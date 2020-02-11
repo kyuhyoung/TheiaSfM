@@ -46,7 +46,6 @@
 #include "theia/sfm/pose/sim_transform_partial_rotation.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/test/test_utils.h"
-#include "theia/util/random.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -57,8 +56,6 @@ using Eigen::Matrix3d;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
-
-RandomNumberGenerator rng(60);
 
 // Tests that the four point pose works correctly by taking the passed
 // points_3d, projecting them to view_1_origins to get image one rays,
@@ -99,8 +96,8 @@ void TestSimTransformResultWithNoise(const Vector3d& axis,
   }
   if (projection_noise_std_dev) {
     for (int i = 0; i < 5; ++i) {
-      AddNoiseToRay(projection_noise_std_dev, &rng, &image_one_rays[i]);
-      AddNoiseToRay(projection_noise_std_dev, &rng, &image_two_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &image_one_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &image_two_rays[i]);
     }
   }
   std::vector<Quaterniond> soln_rotations;

@@ -42,20 +42,17 @@
 #include "theia/matching/guided_epipolar_matcher.h"
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/util/hash.h"
 #include "theia/util/random.h"
 
 namespace theia {
 
-std::shared_ptr<RandomNumberGenerator> rng =
-    std::make_shared<RandomNumberGenerator>(55);
-
 void TestGuidedEpipolarMatcher(const int num_valid_matches,
                                const int num_invalid_matches,
                                const int num_provided_matches) {
   static const int kNumDescriptorDimensions = 128;
+  InitRandomGenerator();
 
   // Set up two cameras, with camera 1 being at the coordinate system origin.
   static const double kFocalLength = 800.0;
@@ -65,16 +62,17 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
   camera1.SetPrincipalPoint(kPrincipalPoint, kPrincipalPoint);
   camera2.SetFocalLength(kFocalLength);
   camera2.SetPrincipalPoint(kPrincipalPoint, kPrincipalPoint);
-  camera2.SetOrientationFromRotationMatrix(RandomRotation(5.0, rng.get()));
-  camera2.SetPosition(rng->RandVector3d());
+  camera2.SetOrientationFromRotationMatrix(ProjectToRotationMatrix(
+      Eigen::Matrix3d::Identity() + 0.1 * Eigen::Matrix3d::Random()));
+  camera2.SetPosition(Eigen::Vector3d::Random());
 
   // Create 3d points and reproject them into both images to form
   // correspondences.
   KeypointsAndDescriptors features1, features2;
   for (int i = 0; i < num_valid_matches; i++) {
-    Eigen::Vector4d point(rng->RandDouble(-2.0, 2.0),
-                          rng->RandDouble(-2.0, 2.0),
-                          rng->RandDouble(5.0, 10.0),
+    Eigen::Vector4d point(RandDouble(-2.0, 2.0),
+                          RandDouble(-2.0, 2.0),
+                          RandDouble(5.0, 10.0),
                           1.0);
     Eigen::Vector2d point1, point2;
     CHECK_GT(camera1.ProjectPoint(point, &point1), 0);
@@ -91,7 +89,7 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
     // Make the descriptors the same for each feature so that they will be
     // guaranteed to match.
     Eigen::VectorXf descriptor(kNumDescriptorDimensions);
-    rng->SetRandom(&descriptor);
+    descriptor.setRandom();
     descriptor.normalize();
     features1.descriptors.emplace_back(descriptor);
     features2.descriptors.emplace_back(descriptor);
@@ -100,17 +98,16 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
   // Add bogus features to the image that have no matches.
   const double max_image_bound = 2.0 * kPrincipalPoint;
   for (int i = 0; i < num_invalid_matches; i++) {
-    features1.keypoints.emplace_back(rng->RandDouble(0, max_image_bound),
-                                     rng->RandDouble(0, max_image_bound),
+    features1.keypoints.emplace_back(RandDouble(0, max_image_bound),
+                                     RandDouble(0, max_image_bound),
                                      Keypoint::OTHER);
-    features2.keypoints.emplace_back(rng->RandDouble(0, max_image_bound),
-                                     rng->RandDouble(0, max_image_bound),
+    features2.keypoints.emplace_back(RandDouble(0, max_image_bound),
+                                     RandDouble(0, max_image_bound),
                                      Keypoint::OTHER);
-    Eigen::VectorXf rand_vec(kNumDescriptorDimensions);
-    rng->SetRandom(&rand_vec);
-    features1.descriptors.emplace_back(rand_vec.normalized());
-    rng->SetRandom(&rand_vec);
-    features2.descriptors.emplace_back(rand_vec.normalized());
+    features1.descriptors.emplace_back(
+        Eigen::VectorXf::Random(kNumDescriptorDimensions).normalized());
+    features2.descriptors.emplace_back(
+        Eigen::VectorXf::Random(kNumDescriptorDimensions).normalized());
   }
 
   // Add some pre-computed matches if applicable.
@@ -126,7 +123,6 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
 
   // Run guided matching.
   GuidedEpipolarMatcher::Options options;
-  options.rng = rng;
   GuidedEpipolarMatcher matcher(options, camera1, camera2, features1,
                                 features2);
 

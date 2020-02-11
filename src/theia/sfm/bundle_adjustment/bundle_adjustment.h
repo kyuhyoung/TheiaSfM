@@ -35,7 +35,7 @@
 #ifndef THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUSTMENT_H_
 #define THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUSTMENT_H_
 
-#include <ceres/types.h>
+#include <ceres/ceres.h>
 #include <unordered_set>
 
 #include "theia/sfm/bundle_adjustment/create_loss_function.h"
@@ -51,13 +51,10 @@ class Reconstruction;
 //   - Aspect ratio
 //   - Skew
 //   - Principal points (x and y)
-//   - Radial distortion
-//   - Tangential distortion
-// These intrinsic parameters may or may not be present for a given camera model
-// and only the relevant intrinsics will be optimized per camera. It is often
-// known for instance that skew is 0 and aspect ratio is 1, and so we do not
-// always desire to optimize all camera intrinsics. In many cases, the focal
-// length is the only parameter we care to optimize.
+//   - Radial distortion (2-parameter model)
+// It is often known for instance that skew is 0 and aspect ratio is 1, and so
+// we do not always desire to optimize all camera intrinsics. In many cases, the
+// focal length is the only parameter we care to optimize.
 //
 // Users can specify which intrinsics to optimize by using a bitmask. For
 // instance FOCAL_LENGTH|PRINCIPAL_POINTS will optimize the focal length and
@@ -69,9 +66,8 @@ enum class OptimizeIntrinsicsType {
   SKEW = 0x04,
   PRINCIPAL_POINTS = 0x08,
   RADIAL_DISTORTION = 0x10,
-  TANGENTIAL_DISTORTION = 0x20,
-  ALL = FOCAL_LENGTH | ASPECT_RATIO | SKEW | PRINCIPAL_POINTS |
-        RADIAL_DISTORTION | TANGENTIAL_DISTORTION,
+  ALL =
+    FOCAL_LENGTH | ASPECT_RATIO | SKEW | PRINCIPAL_POINTS | RADIAL_DISTORTION,
 };
 ENABLE_ENUM_BITMASK_OPERATORS(OptimizeIntrinsicsType)
 
@@ -91,17 +87,12 @@ struct BundleAdjustmentOptions {
   // If true, ceres will log verbosely.
   bool verbose = false;
 
-  // If true, the camera orientations and/or positions will be set to
-  // constant. This may be desirable if, for instance, you have accurate
-  // positions from GPS but do not know camera orientations.
-  bool constant_camera_orientation = false;
-  bool constant_camera_position = false;
-
   // Indicates which intrinsics should be optimized as part of bundle
   // adjustment. By default, we do not optimize skew and aspect ratio since
   // these are almost universally constant.
   OptimizeIntrinsicsType intrinsics_to_optimize =
       OptimizeIntrinsicsType::FOCAL_LENGTH |
+      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
 
   int num_threads = 1;

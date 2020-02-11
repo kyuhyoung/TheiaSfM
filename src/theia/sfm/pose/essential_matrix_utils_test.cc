@@ -42,22 +42,19 @@
 #include "theia/sfm/pose/essential_matrix_utils.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
-#include "theia/util/random.h"
 
 namespace theia {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
-RandomNumberGenerator rng(51);
-
 TEST(DecomposeEssentialMatrix, BasicTest) {
   const double kTranslationTolerance = 1e-6;
   const double kRotationTolerance = 1e-4;
 
   for (int i = 0; i < 100; i++) {
-    const Matrix3d gt_rotation = RandomRotation(10.0, &rng);
-    const Vector3d gt_translation = rng.RandVector3d().normalized();
+    const Matrix3d gt_rotation = ProjectToRotationMatrix(Matrix3d::Random());
+    const Vector3d gt_translation = Vector3d::Random().normalized();
     const Matrix3d essential_matrix =
         CrossProductMatrix(gt_translation) * gt_rotation;
 
@@ -88,9 +85,10 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
   static const double kTolerance = 1e-12;
 
   for (int i = 0; i < 100; i++) {
-    const Matrix3d gt_rotation = RandomRotation(15.0, &rng);
+    const Matrix3d gt_rotation = ProjectToRotationMatrix(
+        Matrix3d::Identity() + 0.3 * Matrix3d::Random());
 
-    const Vector3d gt_translation = rng.RandVector3d().normalized();
+    const Vector3d gt_translation = Vector3d::Random().normalized();
     const Vector3d gt_position = -gt_rotation.transpose() * gt_translation;
     const Matrix3d essential_matrix =
         CrossProductMatrix(gt_translation) * gt_rotation;
@@ -99,7 +97,7 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
     std::vector<FeatureCorrespondence> correspondences;
     for (int j = 0; j < num_inliers; j++) {
       // Make sure the point is in front of the camera.
-      const Vector3d point_3d = rng.RandVector3d() + Vector3d(0, 0, 100);
+      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 100);
       const Vector3d proj_3d = gt_rotation * point_3d + gt_translation;
 
       FeatureCorrespondence correspondence;
@@ -111,7 +109,7 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
     // Add outliers
     for (int j = 0; j < num_outliers; j++) {
       // Make sure the point is in front of the camera.
-      const Vector3d point_3d = rng.RandVector3d() + Vector3d(0, 0, -100);
+      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, -100);
       const Vector3d proj_3d = gt_rotation * point_3d + gt_translation;
 
       FeatureCorrespondence correspondence;

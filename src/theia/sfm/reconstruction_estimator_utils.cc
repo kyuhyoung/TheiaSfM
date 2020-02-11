@@ -49,7 +49,6 @@
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
-#include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/view_graph.h"
@@ -92,20 +91,6 @@ void GetNormalizedFeatureCorrespondences(
 
 }  // namespace
 
-double ComputeResolutionScaledThreshold(const double threshold_pixels,
-                                        const int image_width,
-                                        const int image_height) {
-  static const double kDefaultImageDimension = 1024.0;
-
-  if (image_width == 0 && image_height == 0) {
-    return threshold_pixels;
-  }
-
-  const int max_image_dimension = std::max(image_width, image_height);
-  return threshold_pixels * static_cast<double>(max_image_dimension) /
-         kDefaultImageDimension;
-}
-
 // Sets the bundle adjustment options from the reconstruction estimator options.
 BundleAdjustmentOptions SetBundleAdjustmentOptions(
     const ReconstructionEstimatorOptions& options, const int num_views) {
@@ -136,7 +121,6 @@ BundleAdjustmentOptions SetBundleAdjustmentOptions(
 RansacParameters SetRansacParameters(
     const ReconstructionEstimatorOptions& options) {
   RansacParameters ransac_params;
-  ransac_params.rng = options.rng;
   ransac_params.failure_probability = 1.0 - options.ransac_confidence;
   ransac_params.min_iterations = options.ransac_min_iterations;
   ransac_params.max_iterations = options.ransac_max_iterations;

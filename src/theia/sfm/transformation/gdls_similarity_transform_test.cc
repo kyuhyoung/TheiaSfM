@@ -41,10 +41,10 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/math/util.h"
-#include "theia/sfm/pose/test_util.h"
-#include "theia/sfm/transformation/gdls_similarity_transform.h"
 #include "theia/util/random.h"
 #include "theia/util/util.h"
+#include "theia/sfm/pose/test_util.h"
+#include "theia/sfm/transformation/gdls_similarity_transform.h"
 
 namespace theia {
 namespace {
@@ -53,8 +53,6 @@ using Eigen::Map;
 using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
-
-RandomNumberGenerator rng(57);
 
 void TestGdlsSimilarityTransformWithNoise(
     const std::vector<Vector3d>& camera_centers,
@@ -89,7 +87,7 @@ void TestGdlsSimilarityTransformWithNoise(
   if (projection_noise_std_dev) {
     // Adds noise to both of the rays.
     for (int i = 0; i < num_points; i++) {
-      AddNoiseToRay(projection_noise_std_dev, &rng, &camera_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &camera_rays[i]);
     }
   }
 
@@ -279,15 +277,16 @@ TEST(GdlsSimilarityTransform, ManyPoints) {
   const double kMaxAllowedTranslationDifference = 1e-3;
   const double kMaxAllowedScaleDifference = 1e-2;
 
+  InitRandomGenerator();
   for (int i = 0; i < THEIA_ARRAYSIZE(kAxes); i++) {
     const Quaterniond soln_rotation(AngleAxisd(kRotationAngles[i], kAxes[i]));
     for (int j = 0; j < THEIA_ARRAYSIZE(num_points); j++) {
       std::vector<Vector3d> points_3d;
       points_3d.reserve(num_points[j]);
       for (int k = 0; k < num_points[j]; k++) {
-        points_3d.push_back(Vector3d(rng.RandDouble(-5.0, 5.0),
-                                     rng.RandDouble(-5.0, 5.0),
-                                     rng.RandDouble(2.0, 10.0)));
+        points_3d.push_back(Vector3d(RandDouble(-5.0, 5.0),
+                                     RandDouble(-5.0, 5.0),
+                                     RandDouble(2.0, 10.0)));
       }
 
       TestGdlsSimilarityTransformWithNoise(

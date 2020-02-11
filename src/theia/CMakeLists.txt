@@ -41,8 +41,7 @@ set(THEIA_SRC
   image/descriptor/create_descriptor_extractor.cc
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
-  image/image.cc
-  image/image_cache.cc
+  image/image_canvas.cc
   image/keypoint_detector/sift_detector.cc
   io/import_nvm_file.cc
   io/read_1dsfm.cc
@@ -78,12 +77,8 @@ set(THEIA_SRC
   sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
-  sfm/camera/camera_intrinsics_model.cc
-  sfm/camera/fisheye_camera_model.cc
-  sfm/camera/fov_camera_model.cc
-  sfm/camera/pinhole_camera_model.cc
-  sfm/camera/pinhole_radial_tangential_camera_model.cc
   sfm/camera/projection_matrix_utils.cc
+  sfm/camera/radial_distortion.cc
   sfm/colorize_reconstruction.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
@@ -117,7 +112,6 @@ set(THEIA_SRC
   sfm/global_pose_estimation/pairwise_translation_error.cc
   sfm/global_pose_estimation/robust_rotation_estimator.cc
   sfm/global_reconstruction_estimator.cc
-  sfm/gps_converter.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
   sfm/pose/dls_impl.cc
@@ -153,7 +147,6 @@ set(THEIA_SRC
   sfm/triangulation/triangulation.cc
   sfm/twoview_info.cc
   sfm/two_view_match_geometric_verification.cc
-  sfm/undistort_image.cc
   sfm/view.cc
   sfm/view_graph/orientations_from_maximum_spanning_tree.cc
   sfm/view_graph/remove_disconnected_view_pairs.cc
@@ -170,9 +163,10 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${CERES_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${GLOG_LIBRARIES}
+  ${CIMG_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
-  ${OPENIMAGEIO_LIBRARIES}
   akaze
+  easyexif
   flann_cpp
   statx
   stlplus3
@@ -234,11 +228,8 @@ if (BUILD_TESTING)
   gtest(math/qp_solver)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
-  gtest(sfm/camera/fisheye_camera_model)
-  gtest(sfm/camera/fov_camera_model)
-  gtest(sfm/camera/pinhole_camera_model)
-  gtest(sfm/camera/pinhole_radial_tangential_camera_model)
   gtest(sfm/camera/projection_matrix_utils)
+  gtest(sfm/camera/radial_distortion)
   gtest(sfm/estimators/estimate_calibrated_absolute_pose)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
@@ -265,7 +256,6 @@ if (BUILD_TESTING)
   gtest(sfm/global_pose_estimation/pairwise_translation_and_scale_error)
   gtest(sfm/global_pose_estimation/pairwise_translation_error)
   gtest(sfm/global_pose_estimation/robust_rotation_estimator)
-  gtest(sfm/gps_converter)
   gtest(sfm/incremental_reconstruction_estimator)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)

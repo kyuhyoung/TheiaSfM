@@ -39,22 +39,13 @@
 --position_estimation_min_num_tracks_per_view=0
 --position_estimation_robust_loss_width=0.1
 
-# If true, perform a single iteration of bundle adjustment only on the camera
-# positions and 3D points (rotation and camera intrinsics are held
-# constant). This helps often to constrain inaccurate intrinsics.
---refine_camera_positions_and_points_after_position_estimation=true
-
 # After estimating camera poses, we perform trianguation, then BA,
 # then filter out bad points. This controls how many times we repeat
 # this process.
 --num_retriangulation_iterations=1
 
 ############### Incremental SfM Options ###############
-
-# NOTE: This threshold is relative to an image with a width of 1024 pixels. It
-# will be scaled appropriately based on the image resolutions. This allows a
-# single threshold to be used for images with different resolutions.
---absolute_pose_reprojection_error_threshold=4
+--absolute_pose_reprojection_error_threshold=8
 --partial_bundle_adjustment_num_views=20
 --full_bundle_adjustment_growth_percent=5
 --min_num_absolute_pose_inliers=30

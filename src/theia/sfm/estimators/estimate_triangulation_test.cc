@@ -36,10 +36,8 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "theia/sfm/pose/test_util.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/sfm/estimators/estimate_triangulation.h"
-#include "theia/util/random.h"
 
 namespace theia {
 
@@ -49,8 +47,6 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-
-RandomNumberGenerator rng(151);
 
 void CreateObservations(
     const int num_observations,
@@ -64,16 +60,16 @@ void CreateObservations(
   // Initialize a random rotation and position within a 2x2x2 box around the
   // origin.
   for (int i = 0; i < num_observations; i++) {
-    const Matrix3d rotation = RandomRotation(5.0, &rng);
+    const Matrix3d rotation = Matrix3d::Identity() + 0.1 * Matrix3d::Random();
     const Vector3d position =
-        rng.RandVector3d() + Vector3d(i / 2.0, i / 2.0, i / 2.0);
+        Vector3d::Random() + Vector3d(i / 2.0, i / 2.0, i / 2.0);
     const Vector3d translation = -rotation * position;
     projection_matrices->at(i) << rotation, translation;
     features->at(i) = (projection_matrices->at(i) * point3d).hnormalized();
   }
 
   for (int i = 0; i < num_outliers; i++) {
-    rng.SetRandom(&(*projection_matrices)[i]);
+    projection_matrices->at(i) = Matrix3x4d::Random();
     features->at(i) = (projection_matrices->at(i) * point3d).hnormalized();
   }
 }
@@ -86,7 +82,6 @@ TEST(EstimateTriangulation, InsufficientObservations) {
   CreateObservations(1, 0, &projection_matrices, &features);
 
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;
@@ -103,7 +98,6 @@ TEST(EstimateTriangulation, TwoViews) {
   CreateObservations(2, 0, &projection_matrices, &features);
 
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;
@@ -126,7 +120,6 @@ TEST(EstimateTriangulation, WithOutliers) {
   CreateObservations(10, 2, &projection_matrices, &features);
 
   RansacParameters params;
-  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;

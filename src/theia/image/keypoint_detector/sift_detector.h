@@ -42,12 +42,13 @@ extern "C" {
 #include <vector>
 
 #include "theia/image/keypoint_detector/keypoint_detector.h"
+#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/util.h"
 
 namespace theia {
-class FloatImage;
-class Keypoint;
+template<class T> class Image;
+typedef Image<float> FloatImage;
 
 // SIFT detector as originally proposed by David Lowe. This relies on the open
 // source software VLFeat (www.vlfeat.org) to detect keypoints.
@@ -61,7 +62,7 @@ class SiftDetector : public KeypointDetector {
   SiftDetector(int num_octaves, int num_levels, int first_octave)
       : sift_params_(num_octaves, num_levels, first_octave),
         sift_filter_(nullptr) {}
-  SiftDetector() : sift_filter_(nullptr) {}
+  SiftDetector() : SiftDetector(-1, 3, 0) {}
   ~SiftDetector();
 
   // Given an image, detect keypoints using the sift descriptor.

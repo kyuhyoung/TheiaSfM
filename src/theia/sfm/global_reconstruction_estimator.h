@@ -39,6 +39,7 @@
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
+#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/util.h"
@@ -76,7 +77,7 @@ class GlobalReconstructionEstimator : public ReconstructionEstimator {
   ReconstructionEstimatorSummary Estimate(ViewGraph* view_graph,
                                           Reconstruction* reconstruction);
 
- private:
+ protected:
   bool FilterInitialViewGraph();
   void CalibrateCameras();
   bool EstimateGlobalRotations();
@@ -86,9 +87,6 @@ class GlobalReconstructionEstimator : public ReconstructionEstimator {
   bool EstimatePosition();
   void EstimateStructure();
   bool BundleAdjustment();
-  // Bundle adjust only the camera positions and points. The camera orientations
-  // and intrinsics are held constant.
-  bool BundleAdjustCameraPositionsAndPoints();
 
   ViewGraph* view_graph_;
   Reconstruction* reconstruction_;

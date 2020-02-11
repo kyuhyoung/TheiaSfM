@@ -37,24 +37,16 @@
 
 #include <Eigen/Core>
 #include <unordered_map>
-#include <unordered_set>
 
-#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
-#include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/reconstruction.h"
+#include "theia/sfm/reconstruction_estimator.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/sfm/twoview_info.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
-class Reconstruction;
-class ViewGraph;
-struct ReconstructionEstimatorOptions;
-
-// By default, Theia uses pixel error thresholds based on an image that is 1024
-// pixels wide. For images of different resolutions this function will scale the
-// threshold based on the maximum image dimensions. If the image dimensions are
-// not set, then the input value is returned.
-double ComputeResolutionScaledThreshold(const double threshold_pixels,
-                                        const int image_width,
-                                        const int image_height);
 
 // Sets the bundle adjustment optiosn from the reconstruction estimator options.
 BundleAdjustmentOptions SetBundleAdjustmentOptions(

@@ -46,7 +46,6 @@
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/sfm/pose/util.h"
-#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -69,10 +68,11 @@ void NormalizeFeatures(
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences) {
   CHECK_NOTNULL(normalized_correspondences)->clear();
+  static const bool kSetFocalLengthFromMedianFOV = false;
 
   Camera camera1, camera2;
-  camera1.SetFromCameraIntrinsicsPriors(prior1);
-  camera2.SetFromCameraIntrinsicsPriors(prior2);
+  SetCameraIntrinsicsFromPriors(prior1, kSetFocalLengthFromMedianFOV, &camera1);
+  SetCameraIntrinsicsFromPriors(prior2, kSetFocalLengthFromMedianFOV, &camera2);
   normalized_correspondences->reserve(correspondences.size());
   for (const FeatureCorrespondence& correspondence : correspondences) {
     FeatureCorrespondence normalized_correspondence;
@@ -104,24 +104,12 @@ bool EstimateTwoViewInfoCalibrated(
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
-  ransac_options.rng = options.rng;
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;
-
-  // Compute the sampson error threshold to account for the resolution of the
-  // images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics1.image_width,
-      intrinsics1.image_height);
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics2.image_width,
-      intrinsics2.image_height);
   ransac_options.error_thresh =
-      max_sampson_error_pixels1 * max_sampson_error_pixels2 /
-      (intrinsics1.focal_length.value[0] * intrinsics2.focal_length.value[0]);
+      options.max_sampson_error_pixels * options.max_sampson_error_pixels /
+      (intrinsics1.focal_length.value * intrinsics2.focal_length.value);
   ransac_options.use_mle = options.use_mle;
 
   RelativePose relative_pose;
@@ -139,8 +127,8 @@ bool EstimateTwoViewInfoCalibrated(
   // Set the twoview info.
   twoview_info->rotation_2 = rotation.angle() * rotation.axis();
   twoview_info->position_2 = relative_pose.position;
-  twoview_info->focal_length_1 = intrinsics1.focal_length.value[0];
-  twoview_info->focal_length_2 = intrinsics2.focal_length.value[0];
+  twoview_info->focal_length_1 = intrinsics1.focal_length.value;
+  twoview_info->focal_length_2 = intrinsics2.focal_length.value;
   twoview_info->num_verified_matches = summary.inliers.size();
 
   *inlier_indices = summary.inliers;
@@ -164,23 +152,11 @@ bool EstimateTwoViewInfoUncalibrated(
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
-  ransac_options.rng = options.rng;
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;
-
-  // Compute the sampson error threshold to account for the resolution of the
-  // images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics1.image_width,
-      intrinsics1.image_height);
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics2.image_width,
-      intrinsics2.image_height);
   ransac_options.error_thresh =
-    max_sampson_error_pixels1 * max_sampson_error_pixels2;
+      options.max_sampson_error_pixels * options.max_sampson_error_pixels;
 
   UncalibratedRelativePose relative_pose;
   RansacSummary summary;

@@ -51,14 +51,14 @@ static const double kFocalLength = 1000.0;
 static const double kReprojectionError = 4.0;
 static const int kNumCameras = 100;
 
-RandomNumberGenerator rng(154);
-
 Camera RandomCamera() {
   Camera camera;
-  camera.SetPosition(rng.RandVector3d(-10.0, 10.0));
-  camera.SetOrientationFromRotationMatrix(RandomRotation(10.0, &rng));
+  camera.SetPosition(10 * Eigen::Vector3d::Random());
+  camera.SetOrientationFromAngleAxis(0.2 * Eigen::Vector3d::Random());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(kFocalLength);
+  camera.SetAspectRatio(1.0);
+  camera.SetSkew(0.0);
   camera.SetPrincipalPoint(kFocalLength / 2.0, kFocalLength / 2.0);
   return camera;
 }
@@ -82,9 +82,9 @@ void ExecuteRandomTest(
     do {
       // Create a 3D point randomly, and try to ensure that it is in front of
       // the camera.
-      correspondence.point3d = Eigen::Vector4d(rng.RandDouble(-5, 5),
-                                               rng.RandDouble(-5, 5),
-                                               rng.RandDouble(10, 20),
+      correspondence.point3d = Eigen::Vector4d(RandDouble(-5, 5),
+                                               RandDouble(-5, 5),
+                                               RandDouble(10, 20),
                                                1.0);
 
       depth = correspondence.camera.ProjectPoint(correspondence.point3d,
@@ -96,14 +96,14 @@ void ExecuteRandomTest(
   // Add noise to the image observations.
   if (noise) {
     for (int i = 0; i < kNumCameras; i++) {
-      correspondences[i].observation += noise * rng.RandVector2d();
+      correspondences[i].observation += noise * Eigen::Vector2d::Random();
     }
   }
 
   // Add outliers.
   for (int i = 0; i < kNumCameras; i++) {
     if (i > inlier_ratio * kNumCameras) {
-      correspondences[i].observation = kFocalLength * rng.RandVector2d();
+      correspondences[i].observation = kFocalLength * Eigen::Vector2d::Random();
     }
   }
 
@@ -148,7 +148,6 @@ void ExecuteRandomTest(
 
 TEST(EstimateSimilarityTransformation2D3D, AllInliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -172,7 +171,6 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersNoNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, AllInliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -196,7 +194,6 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersWithNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, OutliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -220,7 +217,6 @@ TEST(EstimateSimilarityTransformation2D3D, OutliersNoNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, OutliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;

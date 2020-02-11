@@ -35,7 +35,6 @@
 #include "theia/sfm/find_common_tracks_in_views.h"
 
 #include <glog/logging.h>
-#include <iterator>
 #include <algorithm>
 #include <vector>
 

@@ -39,28 +39,22 @@
 #include <string>
 #include <vector>
 
-#include "theia/image/descriptor/create_descriptor_extractor.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
+#include "theia/io/write_matches.h"
+#include "theia/util/util.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
+#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
-#include "theia/sfm/types.h"
-#include "theia/util/util.h"
 
 namespace theia {
-class FeatureExtractorAndMatcher;
-class RandomNumberGenerator;
+
 class Reconstruction;
 class TrackBuilder;
 class ViewGraph;
-struct CameraIntrinsicsPrior;
-struct ImagePairMatch;
 
 struct ReconstructionBuilderOptions {
-  // The random number generator used to generate random numbers through the
-  // reconstruction building process. If this is a nullptr then the random
-  // generator will be initialized based on the current time.
-  std::shared_ptr<RandomNumberGenerator> rng;
-
   // Number of threads used. Each stage of the pipeline (feature extraction,
   // matching, estimation, etc.) will use this number of threads.
   int num_threads = 1;
@@ -167,7 +161,7 @@ class ReconstructionBuilder {
   // successfully estimated.
   bool BuildReconstruction(std::vector<Reconstruction*>* reconstructions);
 
- private:
+ protected:
   // Adds the given matches as edges in the view graph.
   void AddMatchToViewGraph(const ViewId view_id1,
                            const ViewId view_id2,
@@ -182,7 +176,7 @@ class ReconstructionBuilder {
   // Removes all uncalibrated views from the reconstruction and view graph.
   void RemoveUncalibratedViews();
 
-  ReconstructionBuilderOptions options_;
+  const ReconstructionBuilderOptions options_;
 
   // SfM objects.
   std::unique_ptr<TrackBuilder> track_builder_;

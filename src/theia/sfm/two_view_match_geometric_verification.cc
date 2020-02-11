@@ -44,7 +44,6 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/estimators/estimate_homography.h"
-#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -58,13 +57,13 @@ void SetupCameras(const CameraIntrinsicsPrior& intrinsics1,
                   const TwoViewInfo& info,
                   Camera* camera1,
                   Camera* camera2) {
-  camera1->SetFromCameraIntrinsicsPriors(intrinsics1);
   camera1->SetFocalLength(info.focal_length_1);
+  SetCameraIntrinsicsFromPriors(intrinsics1, false, camera1);
 
   camera2->SetOrientationFromAngleAxis(info.rotation_2);
   camera2->SetPosition(info.position_2);
-  camera2->SetFromCameraIntrinsicsPriors(intrinsics2);
   camera2->SetFocalLength(info.focal_length_2);
+  SetCameraIntrinsicsFromPriors(intrinsics2, false, camera2);
 }
 
 // Returns false if the reprojection error of the triangulated point is greater
@@ -194,8 +193,9 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
 
   // Triangulate all points, throwing out the ones with bad initial reprojection
   // errors.
-  const std::vector<Eigen::Vector3d> origins = {camera1_.GetPosition(),
-                                                camera2_.GetPosition()};
+  Matrix3x4d projection_matrix1, projection_matrix2;
+  camera1_.GetProjectionMatrix(&projection_matrix1);
+  camera2_.GetProjectionMatrix(&projection_matrix2);
   std::vector<IndexedFeatureMatch> triangulated_matches;
   triangulated_matches.reserve(matches_.size());
   for (int i = 0; i < matches_.size(); i++) {
@@ -215,7 +215,8 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
     }
 
     Eigen::Vector4d point3d;
-    if (!TriangulateMidpoint(origins, ray_directions, &point3d)) {
+    if (!Triangulate(projection_matrix1, projection_matrix2, feature1, feature2,
+                     &point3d)) {
       continue;
     }
 
@@ -305,21 +306,8 @@ int TwoViewMatchGeometricVerification::CountHomographyInliers() {
   const EstimateTwoViewInfoOptions& etvi_options =
       options_.estimate_twoview_info_options;
   RansacParameters homography_params;
-  homography_params.rng = etvi_options.rng;
-
-  // Compute the reprojection error threshold to account for the resolution of
-  // the images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      etvi_options.max_sampson_error_pixels,
-      camera1_.ImageWidth(),
-      camera1_.ImageHeight());
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      etvi_options.max_sampson_error_pixels,
-      camera2_.ImageWidth(),
-      camera2_.ImageHeight());
-
-  homography_params.error_thresh =
-      max_sampson_error_pixels1 * max_sampson_error_pixels2;
+  homography_params.error_thresh = etvi_options.max_sampson_error_pixels *
+                                   etvi_options.max_sampson_error_pixels;
   homography_params.max_iterations = etvi_options.max_ransac_iterations;
   homography_params.min_iterations = etvi_options.min_ransac_iterations;
   homography_params.use_mle = etvi_options.use_mle;

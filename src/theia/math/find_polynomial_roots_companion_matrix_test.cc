@@ -40,7 +40,6 @@
 #include "theia/math/find_polynomial_roots_companion_matrix.h"
 #include "theia/math/polynomial.h"
 #include "theia/test/test_utils.h"
-#include "theia/util/random.h"
 
 namespace theia {
 
@@ -48,8 +47,6 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace {
-
-RandomNumberGenerator rng(67);
 
 // For IEEE-754 doubles, machine precision is about 2e-16.
 const double kEpsilon = 1e-10;
@@ -233,8 +230,7 @@ TEST(Polynomial, BothOutputArgumentsNullWorks) {
 TEST(Polynomial, CompanionMatrixManyRoots) {
   static const int N = 25;
   VectorXd poly = ConstantPolynomial(1.23);
-  VectorXd roots(N);
-  rng.SetRandom(&roots);
+  VectorXd roots = VectorXd::Random(N);
   roots = SortVector(roots);
 
   for (int i = 0; i < N; ++i) {

@@ -39,8 +39,10 @@
 #include <string>
 #include <vector>
 
+#include "theia/alignment/alignment.h"
+#include "theia/image/keypoint_detector/keypoint.h"
+
 namespace theia {
-class Keypoint;
 
 // Reads the features from a single file.
 bool ReadKeypointsAndDescriptors(const std::string& features_file,

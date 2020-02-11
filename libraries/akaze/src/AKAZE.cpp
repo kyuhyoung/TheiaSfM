@@ -20,8 +20,6 @@
  * @author Pablo F. Alcantarilla, Jesus Nuevo
  */
 
-#define _USE_MATH_DEFINES
-
 #include "cimg/CImg.h"
 #include "src/AKAZE.h"
 #include "src/utils.h"
@@ -33,6 +31,7 @@
 #include <ctime>
 #include <iostream>
 
+#define _USE_MATH_DEFINESo
 
 using namespace libAKAZE;
 
@@ -558,7 +557,7 @@ void AKAZE::Compute_Main_Orientation(AKAZEKeypoint& kpt) const {
         gweight = gauss25[id[i + 6]][id[j + 6]];
         resX[idx] = gweight * evolution_[level].Lx(iy, ix);
         resY[idx] = gweight * evolution_[level].Ly(iy, ix);
-        Ang[idx] = atan2(resY[idx], resX[idx]);
+        Ang[idx] = atan2(resY[idx], resX[idx]) * (M_PI / 180.0);
         ++idx;
       }
     }
@@ -590,7 +589,7 @@ void AKAZE::Compute_Main_Orientation(AKAZEKeypoint& kpt) const {
     if (sumX * sumX + sumY * sumY > max) {
       // store largest orientation
       max = sumX * sumX + sumY * sumY;
-      kpt.angle = atan2(sumY, sumX);
+      kpt.angle = atan2(sumY, sumX) * (M_PI / 180.0);
     }
   }
 }

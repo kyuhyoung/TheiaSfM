@@ -8,17 +8,18 @@
 Image
 =====
 
-Theia provides a basic :class:`FloatImage` class to use for SfM and SLAM
+Theia provides a basic :class:`Image\<T\>` class to use for SfM and SLAM
 applications. The class is fairly lightweight, and is largely a wrapper for the
-`OpenImageIO <http://openimageio.org//>`_ but allows for more general use. It is
-the standard image class that used for feature detection within Theia.
+`CImg <http://cimg.sourceforge.net/>`_ but allows for more general use. It is
+templated on the data type for the pixels (e.g. float, uchar, int) and is the
+standard image class that used for feature detection within Theia.
 
-.. class:: FloatImage
+.. class:: Image<T>
 
   Images can be stored either as RGB or grayscale, and the number of channels
-  used to describe an image can be determined with `:func:Channels`. Images can
-  be easily read in from a file upon contruction or with the :func:`Read`
-  command.
+  used to describe an image can be determined with `:func:Channels`. We have
+  `typdef Image<float> FloatImage` for convenience. Images can be easily read in
+  from a file upon contruction or with the :func:`Read` command.
 
   .. code-block:: c++
 
@@ -33,10 +34,8 @@ the standard image class that used for feature detection within Theia.
     my_rgb_image.Write(out_filename);
     my_grayscale_image.Write(out_filename);
 
-  Once an image is loaded, pixel values can be accessed through several accessor
-  functions. To avoid ambiguity between matrix and image notation, we provide
-  explicit methods to get image pixel values based on either the xy coordinate
-  or the row and column.
+  Once an image is loaded, pixel values can be accessed with ``()``
+  operators. Pixels are referenced in x, y, c order (c is the color channel).
 
   .. code-block:: c++
 
@@ -44,44 +43,57 @@ the standard image class that used for feature detection within Theia.
     FloatImage my_img("test_img.jpg");
 
     // Get the middle pixel location.
-    int middle_x = my_img.Width()/2;
-    int middle_y = my_img.Height()/2;
+    int middle_y = my_img.Rows()/2;
+    int middle_x = my_img.Cols()/2;
 
     // Grab the middle pixel.
-    const Eigen::Vector3f middle_xy_pixel = my_img.GetXY(middle_x, middle_y);
+    const float middle_r_pixel = my_img(middle_x, middle_y, 0);
+    const float middle_g_pixel = my_img(middle_x, middle_y, 1);
+    const float middle_b_pixel = my_img(middle_x, middle_y, 2);
 
-    // Get the middle pixel location.
-    int middle_row = my_img.Rows()/2;
-    int middle_col = my_img.Cols()/2;
+    // Output the RGB Pixel value.
+    LOG(INFO) << "red = " << middle_r_pixel.red
+              << " green = " << middle_g_pixel.green
+              << " blue = " << middle_b_pixel.blue;
 
-    // Grab the middle pixel.
-    const Eigen::Vector3f middle_row_pixel = my_img.GetRowCol(middle_row, middle_col);
+    // Convert to grayscale.
+    my_img.ConvertToGrayscaleImage();
 
-    // The rgb values should be the same for both pixels.
-    CHECK_EQ(middle_xy_pixel(0), middle_row_pixel(0));
-    CHECK_EQ(middle_xy_pixel(1), middle_row_pixel(1));
-    CHECK_EQ(middle_xy_pixel(2), middle_row_pixel(2));
+    // Get the grayscale pixel value.
+    const float middle_gray_pixel = my_img(middle_x, middle_y);
 
-  Similar operations apply for grayscale images and for obtaining the value of
-  specific color channels at a pixel. The :func:`BilinearInterpolate` function
-  allows for interpolation at non-discrete pixel locations. See the image.h file
-  for more details.
+    // Output the grayscale pixel value.
+    LOG(INFO) << "gray = " << middle_gray_pixel;
 
-We have also implemented some useful member functions of the :class:`FloatImage` class. For a full list of functions, `theia/image/image.h`
+  We also read in the EXIF information to determine the focal length. Currently,
+  we only make the focal length publicly accesible but we save all EXIF data and
+  more functionality can be easily added if needed.
 
-.. function:: int FloatImage::Rows() const
-.. function:: int FloatImage::Cols() const
-.. function:: int FloatImage::Channels() const
-.. function:: float* FloatImage::Data()
-.. function:: const float* FloatImage::Data() const
-.. function:: void FloatImage::Read(const std::string& filename)
-.. function:: void FloatImage::Write(const std::string& filename)
-.. function:: void FloatImage::ConvertToGrayscaleImage()
-.. function:: void FloatImage::ConvertToRGBImage()
-.. function:: FloatImage FloatImage::AsGrayscaleImage() const
-.. function:: FloatImage FloatImage::AsRGBImage() const
-.. function:: FloatImage FloatImage::Integrate() const
-.. function:: FloatImage FloatImage::ComputeGradient() const
-.. function:: void FloatImage::Resize(int new_width, int new_height)
-.. function:: void FloatImage::ResizeRowsCols(int new_rows, int new_cols)
-.. function:: void FloatImage::Resize(double scale)
+  .. code-block:: c++
+
+    FloatImage my_img("test_img.jpg");
+    const double focal_length_in_pixels;
+    if (my_img.FocalLengthPixels(&focal_length_pixels)) {
+      LOG(INFO) << "Focal length from EXIF is: " << focal_length_pixels;
+    } else {
+      LOG(INFO) << "Could not extract the focal length from EXIF data.";
+    }
+
+We have also implemented some useful member functions of the :class:`Image` class. For a full list of functions, `theia/image/image.h`
+
+.. function:: int Image\<T\>::Rows() const
+.. function:: int Image\<T\>::Cols() const
+.. function:: int Image\<T\>::Channels() const
+.. function:: T* Image\<T\>::Data()
+.. function:: const T* Image\<T\>::Data() const
+.. function:: void Image\<T\>::Read(const std::string& filename)
+.. function:: void Image\<T\>::Write(const std::string& filename)
+.. function:: void Image\<T\>::ConvertToGrayscaleImage()
+.. function:: void Image\<T\>::ConvertToRGBImage()
+.. function:: Image<T> Image\<T\>::AsGrayscaleImage() const
+.. function:: Image<T> Image\<T\>::AsRGBImage() const
+.. function:: Image\<T\> Image\<T\>::Integrate() const
+.. function:: void Image\<T\>::Resize(int new_rows, int new_cols)
+.. function:: void Image\<T\>::Resize(double scale)
+.. function:: void Image\<T\>::HalfSample(Image\<T\>* out_image) const
+.. function:: void Image\<T\>::TwoThirdsSample(Image\<T\>* out_image) const

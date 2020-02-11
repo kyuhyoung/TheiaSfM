@@ -63,6 +63,19 @@ namespace theia {
 
 FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
     : options_(options) {
+  // Because the function that defines how the cache fetches features from disk
+  // is a member function, we need to bind it to this instance of FeatureMatcher
+  // and specify that it will take in 1 argument.
+  std::function<std::shared_ptr<KeypointsAndDescriptors>(const std::string&)>
+      fetch_features_from_cache =
+          std::bind(&FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk, this,
+                    std::placeholders::_1);
+  // Initialize the LRU cache. NOTE: even though the Fetch method will be set up
+  // to retreive files from disk, it will only do so if
+  // options_.match_out_of_core is set to true.
+  keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
+      fetch_features_from_cache, options_.cache_capacity));
+
   if (options_.match_out_of_core) {
     CHECK_GT(options_.cache_capacity, 2)
         << "The cache capacity must be greater than 2 in order to perform out "
@@ -82,21 +95,6 @@ FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
     // the maximum.
     options_.cache_capacity = std::numeric_limits<int>::max();
   }
-
-  // Because the function that defines how the cache fetches features from disk
-  // is a member function, we need to bind it to this instance of FeatureMatcher
-  // and specify that it will take in 1 argument.
-  std::function<std::shared_ptr<KeypointsAndDescriptors>(const std::string&)>
-      fetch_features_from_cache =
-          std::bind(&FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk, this,
-                    std::placeholders::_1);
-
-  // Initialize the LRU cache. NOTE: even though the Fetch method will be set up
-  // to retreive files from disk, it will only do so if
-  // options_.match_out_of_core is set to true.
-  keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
-      fetch_features_from_cache, options_.cache_capacity));
-
 }
 
 void FeatureMatcher::AddImage(
@@ -147,7 +145,7 @@ void FeatureMatcher::AddImage(
 void FeatureMatcher::AddImages(
     const std::vector<std::string>& image_names,
     const std::vector<CameraIntrinsicsPrior>& intrinsics) {
-  CHECK_EQ(image_names.size(), intrinsics.size());
+  CHECK_EQ(image_names_.size(), intrinsics.size());
   image_names_.reserve(image_names.size() + image_names_.size());
   image_names_.insert(image_names_.end(),
                       image_names.begin(),

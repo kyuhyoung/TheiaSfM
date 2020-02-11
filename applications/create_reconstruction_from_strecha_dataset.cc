@@ -55,7 +55,6 @@ DEFINE_string(output_reconstruction, "",
               "Filepath of the output Theia reconstruction file generated.");
 
 using theia::Camera;
-using theia::PinholeCameraModel;
 using theia::Reconstruction;
 using theia::ViewId;
 
@@ -81,8 +80,6 @@ void AddCameraToReconstruction(const std::string& camera_filepath,
       << " could not be added to the reconstruction.";
 
   Camera* camera = reconstruction->MutableView(view_id)->MutableCamera();
-  camera->SetCameraIntrinsicsModelType(
-      theia::CameraIntrinsicsModelType::PINHOLE);
 
   // The first three rows are the calibration matrix.
   Eigen::Matrix3d calibration_matrix;
@@ -92,15 +89,14 @@ void AddCameraToReconstruction(const std::string& camera_filepath,
     }
   }
   // Extract the camera intrinsics from the calibration matrix.
-  double* camera_intrinsics =
-      camera->MutableCameraIntrinsics()->mutable_parameters();
+  double* camera_intrinsics = camera->mutable_intrinsics();
   theia::CalibrationMatrixToIntrinsics(
       calibration_matrix,
-      camera_intrinsics + PinholeCameraModel::FOCAL_LENGTH,
-      camera_intrinsics + PinholeCameraModel::SKEW,
-      camera_intrinsics + PinholeCameraModel::ASPECT_RATIO,
-      camera_intrinsics + PinholeCameraModel::PRINCIPAL_POINT_X,
-      camera_intrinsics + PinholeCameraModel::PRINCIPAL_POINT_Y);
+      camera_intrinsics + Camera::FOCAL_LENGTH,
+      camera_intrinsics + Camera::SKEW,
+      camera_intrinsics + Camera::ASPECT_RATIO,
+      camera_intrinsics + Camera::PRINCIPAL_POINT_X,
+      camera_intrinsics + Camera::PRINCIPAL_POINT_Y);
 
   // The next line is simply 0 0 0.
   int unused_zero;

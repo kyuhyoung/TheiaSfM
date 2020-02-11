@@ -47,7 +47,6 @@
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
-#include "theia/util/random.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -91,12 +90,6 @@ NonlinearPositionEstimator::NonlinearPositionEstimator(
   CHECK_GE(options_.min_num_points_per_view, 0);
   CHECK_GT(options_.point_to_camera_weight, 0);
   CHECK_GT(options_.robust_loss_width, 0);
-
-  if (options_.rng.get() == nullptr) {
-    rng_ = std::make_shared<RandomNumberGenerator>();
-  } else {
-    rng_ = options_.rng;
-  }
 }
 
 bool NonlinearPositionEstimator::EstimatePositions(
@@ -134,7 +127,7 @@ bool NonlinearPositionEstimator::EstimatePositions(
   // Set the solver options.
   ceres::Solver::Summary summary;
   solver_options_.num_threads = options_.num_threads;
-  solver_options_.num_linear_solver_threads = options_.num_threads;
+  //solver_options_.num_linear_solver_threads = options_.num_threads;
   solver_options_.max_num_iterations = options_.max_num_iterations;
 
   // Choose the type of linear solver. For sufficiently large problems, we want
@@ -175,7 +168,7 @@ void NonlinearPositionEstimator::InitializeRandomPositions(
   positions->reserve(orientations.size());
   for (const auto& orientation : orientations) {
     if (ContainsKey(constrained_positions, orientation.first)) {
-      (*positions)[orientation.first] = 100.0 * rng_->RandVector3d();
+      (*positions)[orientation.first] = 100.0 * Vector3d::Random();
     }
   }
 }
@@ -231,7 +224,7 @@ void NonlinearPositionEstimator::AddPointToCameraConstraints(
 
   triangulated_points_.reserve(tracks_to_add.size());
   for (const TrackId track_id : tracks_to_add) {
-    triangulated_points_[track_id] = 100.0 * rng_->RandVector3d();
+    triangulated_points_[track_id] = 100.0 * Vector3d::Random();
 
     AddTrackToProblem(track_id,
                       orientations,

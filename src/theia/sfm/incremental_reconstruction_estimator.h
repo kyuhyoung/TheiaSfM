@@ -43,8 +43,10 @@
 #include "theia/sfm/localize_view_to_reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
+#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/util/timer.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -89,7 +91,7 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   ReconstructionEstimatorSummary Estimate(ViewGraph* view_graph,
                                           Reconstruction* reconstruction);
 
- private:
+ protected:
   // Choose two cameras to use as the seed for incremental reconstruction. These
   // cameras should observe 3D points that are well-conditioned. We determine
   // the conditioning of 3D points by examining the median viewing angle of the
