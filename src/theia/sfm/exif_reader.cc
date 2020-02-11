@@ -91,7 +91,7 @@ ExifReader::ExifReader() {
 void ExifReader::LoadSensorWidthDatabase() {
   const std::string sensor_width_file =
       std::string(THEIA_DATA_DIR) + "/camera_sensor_database.txt";
-
+    //std::cout << "what:" << sensor_width_file << ":what" << std::endl;    
   std::ifstream ifs(sensor_width_file.c_str(), std::ios::in);
   if (!ifs.is_open()) {
     LOG(FATAL) << "Cannot read the sensor width file from "
