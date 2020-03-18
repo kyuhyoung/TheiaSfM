@@ -35,6 +35,8 @@
 #ifndef THEIA_UTIL_LRU_CACHE_H_
 #define THEIA_UTIL_LRU_CACHE_H_
 
+#include <functional>
+
 #include <glog/logging.h>
 
 #include <limits>
